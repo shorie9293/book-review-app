@@ -45,7 +45,7 @@
 - [x] ViewModel/Providerテスト（BookshelfViewModel/BarcodeScannerViewModel/ReviewViewModel Test — 皐月二十五日時点で実装済み）
 - [x] レビュー画面のWidgetテスト拡充（ReviewCard/ReviewForm/ReviewScreen — 皐月二十五日時点で実装済み）
 - [x] ISBNバーコードスキャン連携テスト（BarcodeScannerScreen 3件 + BookshelfScreen遷移1件 — 皐月十日時点で実装済み）
-- [ ] カバレッジ70%達成
+- [x] カバレッジ70%達成（71.4%達成。coverage.sh導入 + genhtml HTMLレポート生成）
 
 ### ✅ ISBNバーコードスキャン（皐月二十二日 夜刻——イシコリ）
 - [x] `mobile_scanner: ^6.0.0` 導入 + Android CAMERA権限
