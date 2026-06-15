@@ -42,6 +42,14 @@ app.*.map.json
 # Code coverage
 coverage/
 
+# Android signing keys (secrets)
+/android/key.properties
+/android/key.properties.new
+/android/upload-keystore.jks
+/android/upload-keystore.jks.bak
+/android/upload-keystore.jks.base64
+/android/upload_certificate.pem
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
