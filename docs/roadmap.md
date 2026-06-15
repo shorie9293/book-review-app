@@ -73,9 +73,9 @@
 | feature_graphic.png（1024x500） | ✅ 完了 |
 | icon.png（1024x1024） | ✅ 完了 |
 | generate_upload_key.sh | ✅ 完了 |
-| CI/CDワークフロー（flutter-ci.yml + deploy.yml） | ⬜ 未了 |
-| fastlane Appfile / Fastfile | ⬜ 未了 |
-| GitHubリポジトリ作成（gh auth 要） | ⬜ 未了 |
+| CI/CDワークフロー（flutter-ci.yml + deploy.yml） | ✅ 完了（commit `d85cf54`） |
+| fastlane Appfile / Fastfile | ✅ 完了（commit `d85cf54`） |
+| GitHubリポジトリ作成（gh auth 要） | ⬜ 未了（リモート設定済だがリポジトリ未作成。pushブロック中） |
 | 署名鍵実生成（keytool 要） | ⬜ 未了 |
 
-**コミット**: `f9282f1` + `c0b9052`
+**コミット**: `f9282f1` + `c0b9052` + `d85cf54`（水無月十五日・午後——イシコリドメ）
