@@ -75,7 +75,7 @@
 | generate_upload_key.sh | ✅ 完了 |
 | CI/CDワークフロー（flutter-ci.yml + deploy.yml） | ✅ 完了（commit `d85cf54`） |
 | fastlane Appfile / Fastfile | ✅ 完了（commit `d85cf54`） |
-| GitHubリポジトリ作成（gh auth 要） | ⬜ 未了（リモート設定済だがリポジトリ未作成。pushブロック中） |
-| 署名鍵実生成（keytool 要） | ⬜ 未了 |
+|| GitHubリポジトリ作成（gh auth 要） | ⬜ 未了（リモート設定済だがリポジトリ未作成。pushブロック中） |
+|| 署名鍵実生成（keytool 要） | ✅ 完了（commit `16ac525`） |
 
-**コミット**: `f9282f1` + `c0b9052` + `d85cf54`（水無月十五日・午後——イシコリドメ）
+**コミット**: `f9282f1` + `c0b9052` + `d85cf54`（水無月十五日・午後——イシコリドメ）+ `16ac525`（水無月十六日・朝——イシコリドメ、署名鍵実生成）
