@@ -1,0 +1,86 @@
+name: 🚀 Deploy to Google Play
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pubspec.yaml'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      track:
+        description: '配信トラック'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+
+jobs:
+  deploy:
+    name: Build & Deploy to Google Play
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup local packages
+        run: |
+          mkdir -p ../../packages
+          git clone --depth 1 https://github.com/shorie9293/takamagahara.git /tmp/takamagahara 2>/dev/null || \
+            git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/shorie9293/takamagahara.git /tmp/takamagahara
+          cp -r /tmp/takamagahara/packages/takamagahara_core ../../packages/
+          cp -r /tmp/takamagahara/packages/takamagahara_ui ../../packages/
+          rm -rf /tmp/takamagahara
+
+      - name: 🦋 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.4'
+          channel: 'stable'
+          cache: true
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 📦 Get dependencies
+        run: flutter pub get
+
+      - name: 🔐 Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r\t %' | base64 -d > android/upload-keystore.jks
+
+      - name: 📝 Create key.properties
+        run: |
+          echo "${{ secrets.KEY_PROPERTIES }}" > android/key.properties
+
+      - name: 🔨 Build App Bundle
+        run: flutter build appbundle --release
+
+      - name: 💎 Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: android
+
+      - name: 🚀 Deploy to Google Play
+        working-directory: android
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+        run: |
+          TRACK="${{ github.event.inputs.track || 'internal' }}"
+          bundle exec fastlane deploy track:${TRACK}
+
+      - name: 📤 Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab

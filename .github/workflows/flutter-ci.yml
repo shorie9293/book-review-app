@@ -1,0 +1,58 @@
+name: 🧪 Flutter CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  analyze-and-test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup local packages
+        run: |
+          mkdir -p ../../packages
+          git clone --depth 1 https://github.com/shorie9293/takamagahara.git /tmp/takamagahara 2>/dev/null || \
+            git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/shorie9293/takamagahara.git /tmp/takamagahara
+          cp -r /tmp/takamagahara/packages/takamagahara_core ../../packages/
+          cp -r /tmp/takamagahara/packages/takamagahara_ui ../../packages/
+          rm -rf /tmp/takamagahara
+
+      - name: 🦋 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.4'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get dependencies
+        run: flutter pub get
+
+      - name: 🔍 Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: 🧪 Run tests with coverage
+        run: flutter test --coverage
+
+      - name: 📊 Generate coverage report
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lcov
+          genhtml coverage/lcov.info -o coverage/html
+          lcov --summary coverage/lcov.info
+
+      - name: 📤 Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/html/
