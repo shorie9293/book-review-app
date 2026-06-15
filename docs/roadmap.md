@@ -1,9 +1,9 @@
 # 【book-review-app 道標】
 
 **制定**: 令和八年皐月十二日
-**改訂**: 令和八年皐月三十一日 夜刻（2026年5月31日）— 実測試験数136に更新（朝刻イシコリ確認後、MainScreen test追加で136）
+**改訂**: 令和八年水無月十五日（2026年6月15日）— イシコリドメ
 **種別**: Flutterアプリ（Feature-First構造）
-**状態**: 🟢 蔵書API連携✅ + レビュー機能✅ + ISBNバーコードスキャン✅
+**状態**: 🟢 蔵書API連携✅ + レビュー機能✅ + ISBNバーコードスキャン✅ + 開顕準備進行中
 **試験**: 136/136通過 ✅ / dart analyze clean ✅
 **バージョン**: 1.0.0+2
 
@@ -59,3 +59,23 @@
 **優先度**: 中。Kozuchi/tsundoku-quest開顕待ち。蔵書API連携・レビュー機能・ISBNバーコードスキャンの基盤は完了。試験136/136通過（皐月三十一日 MainScreen Test追加）。開顕準備が次。
 
 **更新履歴**: 皐月三十一日 夜刻（イシコリ）— 道標更新：試験実測136/136通過を反映。MainScreen test追加。皐月三十日 朝刻（イシコリ）— 試験拡充 (+20) で116通過。commit `903aac4`。
+
+---
+
+### 🟢 開顕準備（水無月十五日——イシコリドメ）
+
+| 項目 | 状態 |
+|------|------|
+| gitignore | ✅ 完了 |
+| privacy-policy.md | ✅ 完了 |
+| store-description.md | ✅ 完了 |
+| Gemfile | ✅ 完了 |
+| feature_graphic.png（1024x500） | ✅ 完了 |
+| icon.png（1024x1024） | ✅ 完了 |
+| generate_upload_key.sh | ✅ 完了 |
+| CI/CDワークフロー（flutter-ci.yml + deploy.yml） | ⬜ 未了 |
+| fastlane Appfile / Fastfile | ⬜ 未了 |
+| GitHubリポジトリ作成（gh auth 要） | ⬜ 未了 |
+| 署名鍵実生成（keytool 要） | ⬜ 未了 |
+
+**コミット**: `f9282f1` + `c0b9052`
