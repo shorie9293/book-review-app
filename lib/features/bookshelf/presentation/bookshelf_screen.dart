@@ -3,6 +3,7 @@ import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/book_search_service.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
+import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
 
 class BookshelfScreen extends StatefulWidget {
@@ -139,6 +140,18 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
       appBar: AppBar(
         title: const Text('本棚'),
         actions: [
+          IconButton(
+            key: const Key('challenge_button'),
+            icon: const Icon(Icons.emoji_events),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ChallengeScreen(),
+                ),
+              );
+            },
+            tooltip: '年間読書チャレンジ',
+          ),
           IconButton(
             key: const Key('scan_barcode_button'),
             icon: const Icon(Icons.camera_alt),
