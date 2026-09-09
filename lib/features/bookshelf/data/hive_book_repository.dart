@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:book_review_app/domain/models/book.dart';
+import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'dart:convert';
 
@@ -34,6 +35,9 @@ class HiveBookRepository implements BookRepository {
       'publishedDate': book.publishedDate,
       'pageCount': book.pageCount,
       'description': book.description,
+      'readingStatus': book.readingStatus.name,
+      'currentPage': book.currentPage,
+      'finishedAt': book.finishedAt?.toIso8601String(),
     });
   }
 
@@ -50,6 +54,11 @@ class HiveBookRepository implements BookRepository {
       publishedDate: map['publishedDate'] as String?,
       pageCount: map['pageCount'] as int?,
       description: map['description'] as String?,
+      readingStatus: ReadingStatus.fromStorage(map['readingStatus']),
+      currentPage: (map['currentPage'] as int?) ?? 0,
+      finishedAt: map['finishedAt'] != null
+          ? DateTime.tryParse(map['finishedAt'] as String)
+          : null,
     );
   }
 
@@ -79,6 +88,12 @@ class HiveBookRepository implements BookRepository {
 
   @override
   Future<void> addBook(Book book) async {
+    await _box.put(book.id, _bookToJson(book));
+  }
+
+  @override
+  Future<void> updateBook(Book book) async {
+    if (!_box.containsKey(book.id)) return;
     await _box.put(book.id, _bookToJson(book));
   }
 

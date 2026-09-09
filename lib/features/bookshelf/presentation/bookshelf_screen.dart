@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/domain/models/book.dart';
+import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/book_search_service.dart';
+import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
@@ -302,13 +304,31 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                   )
                 : const Icon(Icons.book, size: 40),
             title: Text(book.title),
-            subtitle: Text('${book.author}  |  ${book.isbn}'),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
-                await widget.repository.removeBook(book.id);
-                await _loadBooks();
-              },
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${book.author}  |  ${book.isbn}'),
+                const SizedBox(height: 4),
+                _readingStatusChip(book),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: Key('status_button_${book.id}'),
+                  icon: _statusIcon(book.readingStatus),
+                  tooltip: '読書状態を変更',
+                  onPressed: () => _showReadingStatusDialog(book),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () async {
+                    await widget.repository.removeBook(book.id);
+                    await _loadBooks();
+                  },
+                ),
+              ],
             ),
             onTap: () => _navigateToReviews(book),
           );
@@ -323,6 +343,79 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           bookId: book.id,
           reviewRepository: widget.reviewRepository!,
         ),
+      ),
+    );
+  }
+
+  /// 読書状態を更新し保存する
+  Future<void> _updateReadingStatus(Book book, Book updated) async {
+    await widget.repository.updateBook(updated);
+    await _loadBooks();
+  }
+
+  /// 読書状態変更ダイアログを表示する
+  Future<void> _showReadingStatusDialog(Book book) async {
+    final result = await showDialog<ReadingStatus>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text('「${book.title}」の読書状態'),
+        children: [
+          for (final status in ReadingStatus.values)
+            SimpleDialogOption(
+              key: Key('status_option_${status.name}'),
+              onPressed: () => Navigator.of(context).pop(status),
+              child: Row(
+                children: [
+                  _statusIcon(status),
+                  const SizedBox(width: 12),
+                  Text(status.label),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+    if (result == null || result == book.readingStatus) return;
+
+    final updated = switch (result) {
+      ReadingStatus.unread => ReadingStatusService.markUnread(book),
+      ReadingStatus.reading => ReadingStatusService.markStarted(book),
+      ReadingStatus.finished => ReadingStatusService.markFinished(book),
+    };
+    await _updateReadingStatus(book, updated);
+  }
+
+  Widget _statusIcon(ReadingStatus status) {
+    return Icon(switch (status) {
+      ReadingStatus.unread => Icons.bookmark_border,
+      ReadingStatus.reading => Icons.menu_book,
+      ReadingStatus.finished => Icons.check_circle,
+    });
+  }
+
+  /// 読書状態を表す小さなチップ
+  Widget _readingStatusChip(Book book) {
+    final color = switch (book.readingStatus) {
+      ReadingStatus.unread => Colors.grey,
+      ReadingStatus.reading => Colors.blue.shade700,
+      ReadingStatus.finished => Colors.green.shade700,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _statusIcon(book.readingStatus),
+          const SizedBox(width: 4),
+          Text(
+            book.readingStatus.label,
+            style: TextStyle(color: color, fontSize: 12),
+          ),
+        ],
       ),
     );
   }

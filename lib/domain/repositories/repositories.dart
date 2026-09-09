@@ -18,6 +18,9 @@ abstract class BookRepository {
   /// 書籍を蔵書に追加する
   Future<void> addBook(Book book);
 
+  /// 書籍の内容（読書状態等）を更新する
+  Future<void> updateBook(Book book);
+
   /// 書籍を蔵書から削除する
   Future<void> removeBook(String id);
 }

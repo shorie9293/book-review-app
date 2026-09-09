@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:book_review_app/domain/models/book.dart';
+import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'dart:io';
+import 'dart:convert';
 
 void main() {
   late Directory tempDir;
@@ -133,6 +135,78 @@ void main() {
 
       await repository.removeBook('non-existent');
       expect(await repository.getBooks(), hasLength(1));
+    });
+
+    test('読書状態フィールドを保存・復元できる（round-trip）', () async {
+      final finished = DateTime(2026, 6, 1);
+      final book = Book(
+        id: 'status-1',
+        title: 'Clean Architecture',
+        author: 'Robert C. Martin',
+        isbn: '978-0-13-449416-6',
+        pageCount: 432,
+      ).copyWith(
+        readingStatus: ReadingStatus.finished,
+        currentPage: 432,
+        finishedAt: finished,
+      );
+
+      await repository.addBook(book);
+      final restored = await repository.getBookById('status-1');
+
+      expect(restored, isNotNull);
+      expect(restored!.readingStatus, ReadingStatus.finished);
+      expect(restored.currentPage, 432);
+      expect(restored.finishedAt, finished);
+    });
+
+    test('updateBook で読書状態を更新できる', () async {
+      final book = Book(
+        id: 'upd-1',
+        title: '読書中にする本',
+        author: 'A',
+        isbn: 'u-1',
+        pageCount: 200,
+      );
+      await repository.addBook(book);
+
+      final reading =
+          book.copyWith(readingStatus: ReadingStatus.reading, currentPage: 50);
+      await repository.updateBook(reading);
+
+      final restored = await repository.getBookById('upd-1');
+      expect(restored!.readingStatus, ReadingStatus.reading);
+      expect(restored.currentPage, 50);
+    });
+
+    test('updateBook は存在しない本には何もしない', () async {
+      final book = Book(
+        id: 'ghost',
+        title: 'Ghost',
+        author: 'A',
+        isbn: 'g-1',
+      ).copyWith(readingStatus: ReadingStatus.reading);
+
+      await repository.updateBook(book);
+      expect(await repository.getBookById('ghost'), isNull);
+    });
+
+    test('旧形式データ（読書状態キー無し）は積読として読める（後方互換）', () async {
+      // 新しいフィールドを持たない旧JSONを直接書き込む
+      final box = await Hive.openBox<String>('books');
+      final oldJson = json.encode({
+        'id': 'legacy-1',
+        'title': '昔の本',
+        'author': 'Old Author',
+        'isbn': 'legacy-isbn',
+      });
+      await box.put('legacy-1', oldJson);
+
+      final restored = await repository.getBookById('legacy-1');
+      expect(restored, isNotNull);
+      expect(restored!.readingStatus, ReadingStatus.unread);
+      expect(restored.currentPage, 0);
+      expect(restored.finishedAt, isNull);
     });
   });
 }

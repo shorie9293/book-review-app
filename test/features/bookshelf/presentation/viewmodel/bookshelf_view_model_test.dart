@@ -29,6 +29,11 @@ class FakeBookRepository implements BookRepository {
   }
 
   @override
+  Future<void> updateBook(Book book) async {
+    if (_store.containsKey(book.id)) _store[book.id] = book;
+  }
+
+  @override
   Future<void> removeBook(String id) async {
     _store.remove(id);
   }
