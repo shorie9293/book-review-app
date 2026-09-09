@@ -39,10 +39,6 @@ dependencies:
   hive_flutter: ^1.1.0
   uuid: ^4.5.2
   mobile_scanner: ^6.0.0
-  # Firebase 運用監視基盤（Crashlytics クラッシュ検知 + Analytics KPI計測）
-  firebase_core: ^4.13.0
-  firebase_crashlytics: ^5.2.7
-  firebase_analytics: ^12.4.6
   takamagahara_ui:
     path: ../../packages/takamagahara_ui
 
