@@ -2,7 +2,7 @@ name: 🚀 Deploy to Google Play
 
 on:
   push:
-    branches: [main]
+    branches: [never-main-disabled]
     paths:
       - 'pubspec.yaml'
       - '.github/workflows/deploy.yml'
