@@ -6,6 +6,7 @@ import 'package:book_review_app/features/bookshelf/data/book_search_service.dart
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
+import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
 
 class BookshelfScreen extends StatefulWidget {
@@ -135,6 +136,19 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     }
   }
 
+  Future<void> _openBulkImport() async {
+    final service = widget.searchService ?? _searchService;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BulkImportScreen(
+          repository: widget.repository,
+          searchService: service,
+          onImported: _loadBooks,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -159,6 +173,12 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             icon: const Icon(Icons.camera_alt),
             onPressed: _openBarcodeScanner,
             tooltip: 'バーコードスキャン',
+          ),
+          IconButton(
+            key: const Key('bulk_import_button'),
+            icon: const Icon(Icons.library_add),
+            onPressed: _openBulkImport,
+            tooltip: '一括インポート',
           ),
         ],
       ),
