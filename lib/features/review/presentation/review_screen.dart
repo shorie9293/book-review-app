@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
+import 'package:book_review_app/domain/repositories/book_note_repository.dart';
+import 'package:book_review_app/features/notes/presentation/book_notes_screen.dart';
 import 'package:book_review_app/features/review/presentation/widgets/review_card.dart';
 import 'package:book_review_app/features/review/presentation/widgets/review_form.dart';
 
@@ -8,14 +10,19 @@ import 'package:book_review_app/features/review/presentation/widgets/review_form
 ///
 /// 指定された書籍（bookId）のレビューを一覧表示する。
 /// レビューの追加、編集、削除機能を提供する。
+/// [noteRepository] が渡された場合は読書メモ・引用画面への導線を表示する。
 class ReviewScreen extends StatefulWidget {
   final String bookId;
   final ReviewRepository reviewRepository;
+
+  /// 読書メモ・引用リポジトリ（未指定なら導線を表示しない）
+  final BookNoteRepository? noteRepository;
 
   const ReviewScreen({
     super.key,
     required this.bookId,
     required this.reviewRepository,
+    this.noteRepository,
   });
 
   @override
@@ -137,11 +144,34 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
   }
 
+  /// 読書メモ・引用画面へ遷移する
+  void _openNotes() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BookNotesScreen(
+          bookId: widget.bookId,
+          repository: widget.noteRepository!,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: const Key('screen_review'),
-      appBar: AppBar(title: const Text('レビュー')),
+      appBar: AppBar(
+        title: const Text('レビュー'),
+        actions: [
+          if (widget.noteRepository != null)
+            IconButton(
+              key: const Key('open_notes_button'),
+              icon: const Icon(Icons.sticky_note_2_outlined),
+              tooltip: '読書メモ・引用',
+              onPressed: _openNotes,
+            ),
+        ],
+      ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         key: const Key('review_add_fab'),

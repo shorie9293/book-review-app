@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/review/data/hive_review_repository.dart';
+import 'package:book_review_app/features/notes/data/hive_book_note_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final HiveBookRepository _repository = HiveBookRepository();
   final HiveReviewRepository _reviewRepository = HiveReviewRepository();
+  final HiveBookNoteRepository _noteRepository = HiveBookNoteRepository();
   bool _initialized = false;
 
   @override
@@ -24,6 +26,7 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _initRepository() async {
     await _repository.init();
     await _reviewRepository.init();
+    await _noteRepository.init();
     if (mounted) {
       setState(() {
         _initialized = true;
@@ -42,6 +45,7 @@ class _MainScreenState extends State<MainScreen> {
     return BookshelfScreen(
       repository: _repository,
       reviewRepository: _reviewRepository,
+      noteRepository: _noteRepository,
     );
   }
 }

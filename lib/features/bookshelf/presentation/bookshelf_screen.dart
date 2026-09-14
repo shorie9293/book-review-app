@@ -7,6 +7,7 @@ import 'package:book_review_app/features/bookshelf/domain/reading_status_service
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
+import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
 
 class BookshelfScreen extends StatefulWidget {
@@ -15,12 +16,16 @@ class BookshelfScreen extends StatefulWidget {
   final List<Book> initialBooks;
   final ReviewRepository? reviewRepository;
 
+  /// 読書メモ・引用リポジトリ（未指定なら導線を表示しない）
+  final BookNoteRepository? noteRepository;
+
   const BookshelfScreen({
     super.key,
     required this.repository,
     this.searchService,
     this.initialBooks = const [],
     this.reviewRepository,
+    this.noteRepository,
   });
 
   @override
@@ -362,6 +367,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
         builder: (_) => ReviewScreen(
           bookId: book.id,
           reviewRepository: widget.reviewRepository!,
+          noteRepository: widget.noteRepository,
         ),
       ),
     );
