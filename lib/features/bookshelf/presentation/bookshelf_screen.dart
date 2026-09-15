@@ -7,6 +7,7 @@ import 'package:book_review_app/features/bookshelf/domain/reading_status_service
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
+import 'package:book_review_app/features/stats/presentation/stats_screen.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
 
@@ -161,6 +162,18 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
       appBar: AppBar(
         title: const Text('本棚'),
         actions: [
+          IconButton(
+            key: const Key('stats_button'),
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const StatsScreen(),
+                ),
+              );
+            },
+            tooltip: '読書統計',
+          ),
           IconButton(
             key: const Key('challenge_button'),
             icon: const Icon(Icons.emoji_events),
