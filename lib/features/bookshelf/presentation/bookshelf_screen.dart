@@ -9,6 +9,8 @@ import 'package:book_review_app/features/challenge/presentation/challenge_screen
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
 import 'package:book_review_app/features/stats/presentation/stats_screen.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
+import 'package:book_review_app/domain/repositories/reading_queue_repository.dart';
+import 'package:book_review_app/features/queue/presentation/reading_queue_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
 
 class BookshelfScreen extends StatefulWidget {
@@ -20,6 +22,9 @@ class BookshelfScreen extends StatefulWidget {
   /// 読書メモ・引用リポジトリ（未指定なら導線を表示しない）
   final BookNoteRepository? noteRepository;
 
+  /// 「次に読む」キューのリポジトリ（未指定なら導線を表示しない）
+  final ReadingQueueRepository? queueRepository;
+
   const BookshelfScreen({
     super.key,
     required this.repository,
@@ -27,6 +32,7 @@ class BookshelfScreen extends StatefulWidget {
     this.initialBooks = const [],
     this.reviewRepository,
     this.noteRepository,
+    this.queueRepository,
   });
 
   @override
@@ -155,6 +161,22 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  /// 「次に読む」キュー画面を開く。
+  Future<void> _openReadingQueue() async {
+    final queueRepository = widget.queueRepository;
+    if (queueRepository == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReadingQueueScreen(
+          repository: queueRepository,
+          booksLoader: widget.repository.getBooks,
+        ),
+      ),
+    );
+    // キューの並び替え・読了状態の変化を本棚へ反映する
+    await _loadBooks();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -198,6 +220,13 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             onPressed: _openBulkImport,
             tooltip: '一括インポート',
           ),
+          if (widget.queueRepository != null)
+            IconButton(
+              key: const Key('reading_queue_button'),
+              icon: const Icon(Icons.playlist_play),
+              onPressed: _openReadingQueue,
+              tooltip: '次に読む',
+            ),
         ],
       ),
       body: Column(
