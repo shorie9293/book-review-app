@@ -6,7 +6,17 @@ import 'package:book_review_app/features/queue/data/hive_reading_queue_repositor
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  /// 現在の文字サイズ倍率（設定画面へ渡す）
+  final double textScale;
+
+  /// 文字サイズ変更時のコールバック（永続化と全体再描画は上位で行う）
+  final ValueChanged<double>? onScaleChanged;
+
+  const MainScreen({
+    super.key,
+    this.textScale = 1.0,
+    this.onScaleChanged,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -51,6 +61,8 @@ class _MainScreenState extends State<MainScreen> {
       reviewRepository: _reviewRepository,
       noteRepository: _noteRepository,
       queueRepository: _queueRepository,
+      textScale: widget.textScale,
+      onScaleChanged: widget.onScaleChanged,
     );
   }
 }

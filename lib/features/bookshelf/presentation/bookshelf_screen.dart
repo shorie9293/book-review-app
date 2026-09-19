@@ -13,6 +13,7 @@ import 'package:book_review_app/domain/repositories/reading_queue_repository.dar
 import 'package:book_review_app/features/queue/presentation/reading_queue_screen.dart';
 import 'package:book_review_app/features/notes/presentation/favorite_notes_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
+import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 
 class BookshelfScreen extends StatefulWidget {
   final BookRepository repository;
@@ -20,11 +21,17 @@ class BookshelfScreen extends StatefulWidget {
   final List<Book> initialBooks;
   final ReviewRepository? reviewRepository;
 
-  /// 読書メモ・引用リポジトリ（未指定なら導線を表示しない）
+  /// 「お気に入りの引用」画面のリポジトリ（未指定なら導線を表示しない）
   final BookNoteRepository? noteRepository;
 
   /// 「次に読む」キューのリポジトリ（未指定なら導線を表示しない）
   final ReadingQueueRepository? queueRepository;
+
+  /// 現在の文字サイズ倍率（設定画面へ渡す）
+  final double textScale;
+
+  /// 文字サイズ変更時のコールバック
+  final ValueChanged<double>? onScaleChanged;
 
   const BookshelfScreen({
     super.key,
@@ -34,6 +41,8 @@ class BookshelfScreen extends StatefulWidget {
     this.reviewRepository,
     this.noteRepository,
     this.queueRepository,
+    this.textScale = 1.0,
+    this.onScaleChanged,
   });
 
   @override
@@ -192,6 +201,20 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  /// 文字サイズ設定画面を開く。
+  Future<void> _openTextScaleSettings() async {
+    final onScaleChanged = widget.onScaleChanged;
+    if (onScaleChanged == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TextScaleSettingsScreen(
+          currentScale: widget.textScale,
+          onScaleChanged: onScaleChanged,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -248,6 +271,13 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
               icon: const Icon(Icons.star_outline),
               onPressed: _openFavoriteNotes,
               tooltip: 'お気に入りの引用',
+            ),
+          if (widget.onScaleChanged != null)
+            IconButton(
+              key: const Key('text_scale_settings_button'),
+              icon: const Icon(Icons.format_size),
+              onPressed: _openTextScaleSettings,
+              tooltip: '文字サイズ設定',
             ),
         ],
       ),
