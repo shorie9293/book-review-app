@@ -37,6 +37,9 @@ class BookNote {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// お気に入りフラグ（既存データの後方互換のため既定は false）
+  final bool isFavorite;
+
   BookNote({
     required this.id,
     required this.bookId,
@@ -46,6 +49,7 @@ class BookNote {
     List<String> tags = const [],
     required this.createdAt,
     DateTime? updatedAt,
+    this.isFavorite = false,
   })  : assert(id != '', 'id must not be empty'),
         assert(bookId != '', 'bookId must not be empty'),
         assert(content.trim() != '', 'content must not be blank'),
@@ -85,6 +89,7 @@ class BookNote {
     bool clearPageNumber = false,
     List<String>? tags,
     DateTime? updatedAt,
+    bool? isFavorite,
   }) {
     return BookNote(
       id: id,
@@ -95,8 +100,12 @@ class BookNote {
       tags: tags ?? this.tags,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
+
+  /// お気に入り状態を切り替えたコピーを返す
+  BookNote toggleFavorite() => copyWith(isFavorite: !isFavorite);
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -105,6 +114,7 @@ class BookNote {
         'content': content,
         'pageNumber': pageNumber,
         'tags': tags,
+        'isFavorite': isFavorite,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -160,6 +170,7 @@ class BookNote {
       tags: tags,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      isFavorite: map['isFavorite'] == true,
     );
   }
 
@@ -173,5 +184,5 @@ class BookNote {
 
   @override
   String toString() =>
-      'BookNote(id: $id, bookId: $bookId, kind: ${kind.name}, page: $pageNumber)';
+      'BookNote(id: $id, bookId: $bookId, kind: ${kind.name}, page: $pageNumber, isFavorite: $isFavorite)';
 }

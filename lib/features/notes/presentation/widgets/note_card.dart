@@ -10,11 +10,15 @@ class NoteCard extends StatelessWidget {
     required this.note,
     required this.onEdit,
     required this.onDelete,
+    this.onToggleFavorite,
   });
 
   final BookNote note;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
+  /// お気に入り切替コールバック（未指定なら星ボタンを表示しない）
+  final VoidCallback? onToggleFavorite;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +83,16 @@ class NoteCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                if (onToggleFavorite != null)
+                  IconButton(
+                    key: const Key('note_card_favorite_button'),
+                    icon: Icon(
+                      note.isFavorite ? Icons.star : Icons.star_border,
+                      color: note.isFavorite ? Colors.amber : null,
+                    ),
+                    tooltip: 'お気に入り',
+                    onPressed: onToggleFavorite,
+                  ),
                 IconButton(
                   key: const Key('note_card_edit_button'),
                   icon: const Icon(Icons.edit),

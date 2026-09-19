@@ -41,6 +41,9 @@ class BookNotesViewModel extends ChangeNotifier {
   /// 引用のみをページ順で返す
   List<BookNote> get quotes => BookNoteService.quotesOf(_notes, _bookId);
 
+  /// お気に入りのメモのみを返す
+  List<BookNote> get favorites => BookNoteService.favoritesOf(_notes);
+
   /// 指定書籍のメモを読み込む
   Future<void> loadNotes(
       BookNoteRepository repository, String bookId) async {
@@ -88,6 +91,13 @@ class BookNotesViewModel extends ChangeNotifier {
   /// メモを削除する
   Future<void> deleteNote(BookNoteRepository repository, String id) async {
     await repository.deleteNote(id);
+    await _reload(repository);
+  }
+
+  /// お気に入り状態を切り替える
+  Future<void> toggleFavorite(
+      BookNoteRepository repository, BookNote note) async {
+    await repository.updateNote(note.toggleFavorite());
     await _reload(repository);
   }
 

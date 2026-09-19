@@ -11,6 +11,7 @@ import 'package:book_review_app/features/stats/presentation/stats_screen.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/reading_queue_repository.dart';
 import 'package:book_review_app/features/queue/presentation/reading_queue_screen.dart';
+import 'package:book_review_app/features/notes/presentation/favorite_notes_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
 
 class BookshelfScreen extends StatefulWidget {
@@ -177,6 +178,20 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     await _loadBooks();
   }
 
+  /// お気に入りの引用画面を開く。
+  Future<void> _openFavoriteNotes() async {
+    final noteRepository = widget.noteRepository;
+    if (noteRepository == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FavoriteNotesScreen(
+          repository: noteRepository,
+          books: _books,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -226,6 +241,13 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
               icon: const Icon(Icons.playlist_play),
               onPressed: _openReadingQueue,
               tooltip: '次に読む',
+            ),
+          if (widget.noteRepository != null)
+            IconButton(
+              key: const Key('open_favorites_button'),
+              icon: const Icon(Icons.star_outline),
+              onPressed: _openFavoriteNotes,
+              tooltip: 'お気に入りの引用',
             ),
         ],
       ),

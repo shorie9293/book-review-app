@@ -246,6 +246,8 @@ class _BookNotesScreenState extends State<BookNotesScreen> {
           note: note,
           onEdit: () => _showEditDialog(note),
           onDelete: () => _showDeleteConfirmation(note),
+          onToggleFavorite: () =>
+              _viewModel.toggleFavorite(widget.repository, note),
         );
       },
     );

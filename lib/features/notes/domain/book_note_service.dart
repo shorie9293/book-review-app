@@ -140,4 +140,44 @@ class BookNoteService {
           .toList(),
     );
   }
+
+  /// お気に入りのメモだけを返す。
+  ///
+  /// bookId 昇順 → ページ番号昇順（未指定は末尾）→ 作成日時昇順 → id 昇順で
+  /// 安定ソートする。入力リストは変更しない。
+  static List<BookNote> favoritesOf(List<BookNote> notes) {
+    final favorites = notes.where((note) => note.isFavorite).toList();
+    favorites.sort((a, b) {
+      final byBook = a.bookId.compareTo(b.bookId);
+      if (byBook != 0) return byBook;
+      final pa = a.pageNumber;
+      final pb = b.pageNumber;
+      if (pa != pb) {
+        if (pa == null) return 1;
+        if (pb == null) return -1;
+        return pa.compareTo(pb);
+      }
+      final byDate = a.createdAt.compareTo(b.createdAt);
+      if (byDate != 0) return byDate;
+      return a.id.compareTo(b.id);
+    });
+    return favorites;
+  }
+
+  /// お気に入りを書籍IDごとに分類する（各リストは [sortNotes] 順、キーは昇順）
+  static Map<String, List<BookNote>> favoritesByBook(
+      List<BookNote> notes) {
+    final grouped = <String, List<BookNote>>{};
+    for (final note in favoritesOf(notes)) {
+      grouped.putIfAbsent(note.bookId, () => []).add(note);
+    }
+    return {
+      for (final entry in grouped.entries)
+        entry.key: sortNotes(entry.value),
+    };
+  }
+
+  /// お気に入りの件数
+  static int favoriteCount(List<BookNote> notes) =>
+      notes.where((note) => note.isFavorite).length;
 }
