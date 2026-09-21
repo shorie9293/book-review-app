@@ -3,8 +3,10 @@ import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/book_search_service.dart';
+import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
+import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
 import 'package:book_review_app/features/stats/presentation/stats_screen.dart';
@@ -53,6 +55,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   final TextEditingController _isbnController = TextEditingController();
   final BookSearchService _searchService = BookSearchService();
   late List<Book> _books;
+  LibraryQuery _query = const LibraryQuery();
   Book? _foundBook;
   bool _isSearching = false;
   String? _errorMessage;
@@ -285,11 +288,21 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
         children: [
           _buildSearchSection(),
           Divider(),
+          LibraryFilterBar(
+            query: _query,
+            totalCount: _books.length,
+            filteredCount: _visibleBooks.length,
+            onChanged: (query) => setState(() => _query = query),
+          ),
           Expanded(child: _buildBookList()),
         ],
       ),
     );
   }
+
+  /// 検索・絞り込み・並び替えを適用した表示用リスト。
+  List<Book> get _visibleBooks =>
+      LibraryQueryService.apply(_books, _query);
 
   Widget _buildSearchSection() {
     return Padding(
@@ -401,14 +414,18 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   }
 
   Widget _buildBookList() {
+    final visibleBooks = _visibleBooks;
     if (_books.isEmpty) {
       return const Center(child: Text('📚 蔵書がありません'));
     }
+    if (visibleBooks.isEmpty) {
+      return const Center(child: Text('🔍 該当する本がありません'));
+    }
 
     return ListView.builder(
-        itemCount: _books.length,
+        itemCount: visibleBooks.length,
         itemBuilder: (context, index) {
-          final book = _books[index];
+          final book = visibleBooks[index];
           return ListTile(
             leading: book.coverImageUrl != null && book.coverImageUrl!.isNotEmpty
                 ? ClipRRect(

@@ -38,6 +38,7 @@ class HiveBookRepository implements BookRepository {
       'readingStatus': book.readingStatus.name,
       'currentPage': book.currentPage,
       'finishedAt': book.finishedAt?.toIso8601String(),
+      'addedAt': book.addedAt?.toIso8601String(),
     });
   }
 
@@ -58,6 +59,9 @@ class HiveBookRepository implements BookRepository {
       currentPage: (map['currentPage'] as int?) ?? 0,
       finishedAt: map['finishedAt'] != null
           ? DateTime.tryParse(map['finishedAt'] as String)
+          : null,
+      addedAt: map['addedAt'] != null
+          ? DateTime.tryParse(map['addedAt'] as String)
           : null,
     );
   }
@@ -88,7 +92,9 @@ class HiveBookRepository implements BookRepository {
 
   @override
   Future<void> addBook(Book book) async {
-    await _box.put(book.id, _bookToJson(book));
+    final toStore =
+        book.addedAt != null ? book : book.copyWith(addedAt: DateTime.now());
+    await _box.put(toStore.id, _bookToJson(toStore));
   }
 
   @override

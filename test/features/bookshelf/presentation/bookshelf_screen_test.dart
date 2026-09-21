@@ -203,7 +203,8 @@ void main() {
       await tester.pumpWidget(_buildApp(repository, initialBooks: [book]));
       await tester.pump();
 
-      expect(find.text('積読'), findsOneWidget);
+      // LibraryFilterBarにも「積読」チップが表示されるため findsWidgets
+      expect(find.text('積読'), findsWidgets);
       expect(find.byKey(const Key('status_button_chip-book')), findsOneWidget);
     });
 
@@ -218,7 +219,8 @@ void main() {
       await tester.pumpWidget(_buildApp(repository, initialBooks: [book]));
       await tester.pump();
 
-      expect(find.text('読書中'), findsOneWidget);
+      // LibraryFilterBarにも「読書中」チップが表示されるため findsWidgets
+      expect(find.text('読書中'), findsWidgets);
       expect(find.byIcon(Icons.menu_book), findsWidgets);
     });
 
@@ -237,7 +239,8 @@ void main() {
       await tester.pumpWidget(_buildApp(repository, initialBooks: [book]));
       await tester.pump();
 
-      expect(find.text('読了'), findsOneWidget);
+      // LibraryFilterBarにも「読了」チップが表示されるため findsWidgets
+      expect(find.text('読了'), findsWidgets);
       expect(find.byIcon(Icons.check_circle), findsWidgets);
     });
 

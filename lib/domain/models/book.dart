@@ -24,6 +24,9 @@ class Book {
   /// 読了日時（読了状態のときのみ設定される）
   final DateTime? finishedAt;
 
+  /// 本棚への追加日時（既存データではnullの場合がある）
+  final DateTime? addedAt;
+
   const Book({
     required this.id,
     required this.title,
@@ -37,6 +40,7 @@ class Book {
     this.readingStatus = ReadingStatus.unread,
     this.currentPage = 0,
     this.finishedAt,
+    this.addedAt,
   });
 
   /// 読書状態・進捗を更新した新しい [Book] を返す（イミュータブル）。
@@ -45,6 +49,8 @@ class Book {
     int? currentPage,
     DateTime? finishedAt,
     bool clearFinishedAt = false,
+    DateTime? addedAt,
+    bool clearAddedAt = false,
   }) {
     return Book(
       id: id,
@@ -59,6 +65,7 @@ class Book {
       readingStatus: readingStatus ?? this.readingStatus,
       currentPage: currentPage ?? this.currentPage,
       finishedAt: clearFinishedAt ? null : (finishedAt ?? this.finishedAt),
+      addedAt: clearAddedAt ? null : (addedAt ?? this.addedAt),
     );
   }
 
