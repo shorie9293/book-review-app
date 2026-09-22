@@ -6,6 +6,7 @@ import 'package:book_review_app/features/bookshelf/data/book_search_service.dart
 import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
+import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
@@ -14,7 +15,6 @@ import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/reading_queue_repository.dart';
 import 'package:book_review_app/features/queue/presentation/reading_queue_screen.dart';
 import 'package:book_review_app/features/notes/presentation/favorite_notes_screen.dart';
-import 'package:book_review_app/features/review/presentation/review_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 
 class BookshelfScreen extends StatefulWidget {
@@ -475,8 +475,9 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   void _navigateToReviews(Book book) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ReviewScreen(
-          bookId: book.id,
+        builder: (_) => BookDetailScreen(
+          book: book,
+          bookRepository: widget.repository,
           reviewRepository: widget.reviewRepository!,
           noteRepository: widget.noteRepository,
         ),

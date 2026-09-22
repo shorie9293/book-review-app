@@ -6,8 +6,8 @@ import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
+import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
-import 'package:book_review_app/features/review/presentation/review_screen.dart';
 import 'dart:io';
 
 /// テスト用のモックレビューリポジトリ
@@ -149,9 +149,8 @@ void main() {
       await tester.tap(find.text('ナビゲーションテスト本'));
       await tester.pumpAndSettle();
 
-      // ReviewScreenに遷移していることを確認
-      expect(find.byType(ReviewScreen), findsOneWidget);
-      expect(find.text('レビュー'), findsOneWidget);
+      // BookDetailScreenに遷移していることを確認（#85: 詳細画面経由）
+      expect(find.byType(BookDetailScreen), findsOneWidget);
     });
 
     testWidgets('蔵書タップで遷移したReviewScreenに正しいbookIdが渡される', (tester) async {

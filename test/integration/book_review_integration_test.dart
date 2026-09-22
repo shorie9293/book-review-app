@@ -5,6 +5,7 @@ import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
+import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
 import 'dart:io';
@@ -95,11 +96,14 @@ void main() {
       // Verify book is in shelf
       expect(find.text('Integration Test Book'), findsOneWidget);
 
-      // Navigate to ReviewScreen
+      // Navigate to BookDetailScreen (#85), then to ReviewScreen
       await tester.tap(find.text('Integration Test Book'));
       await tester.pumpAndSettle();
 
       // Verify navigation
+      expect(find.byType(BookDetailScreen), findsOneWidget);
+      await tester.tap(find.byKey(const Key('book_detail_open_reviews')));
+      await tester.pumpAndSettle();
       expect(find.byType(ReviewScreen), findsOneWidget);
       expect(find.text('レビュー'), findsOneWidget);
       expect(find.text('レビューはまだありません'), findsOneWidget);
@@ -122,8 +126,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      // Navigate to ReviewScreen
+      // Navigate to BookDetailScreen (#85), then to ReviewScreen
       await tester.tap(find.text('Round Trip Test'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BookDetailScreen), findsOneWidget);
+      await tester.tap(find.byKey(const Key('book_detail_open_reviews')));
       await tester.pumpAndSettle();
       expect(find.byType(ReviewScreen), findsOneWidget);
 
@@ -143,7 +150,10 @@ void main() {
       // Verify review is shown
       expect(find.text('Integration review'), findsOneWidget);
 
-      // Navigate back to BookshelfScreen
+      // Navigate back to BookshelfScreen (#85: 詳細画面経由のため2段の戻り)
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.byType(BookDetailScreen), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
 
