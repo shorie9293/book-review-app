@@ -16,6 +16,9 @@ import 'package:book_review_app/domain/repositories/reading_queue_repository.dar
 import 'package:book_review_app/features/queue/presentation/reading_queue_screen.dart';
 import 'package:book_review_app/features/notes/presentation/favorite_notes_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
+import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
+import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 
 class BookshelfScreen extends StatefulWidget {
   final BookRepository repository;
@@ -35,6 +38,12 @@ class BookshelfScreen extends StatefulWidget {
   /// 文字サイズ変更時のコールバック
   final ValueChanged<double>? onScaleChanged;
 
+  /// 現在のテーマ設定（設定画面へ渡す）
+  final ThemeModeSetting themeMode;
+
+  /// テーマ変更時のコールバック
+  final ValueChanged<ThemeModeSetting>? onThemeModeChanged;
+
   const BookshelfScreen({
     super.key,
     required this.repository,
@@ -45,6 +54,8 @@ class BookshelfScreen extends StatefulWidget {
     this.queueRepository,
     this.textScale = 1.0,
     this.onScaleChanged,
+    this.themeMode = ThemeModeSetting.system,
+    this.onThemeModeChanged,
   });
 
   @override
@@ -218,6 +229,20 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  /// テーマ設定画面を開く。
+  Future<void> _openThemeModeSettings() async {
+    final onThemeModeChanged = widget.onThemeModeChanged;
+    if (onThemeModeChanged == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ThemeModeSettingsScreen(
+          currentMode: widget.themeMode,
+          onModeChanged: onThemeModeChanged,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -281,6 +306,13 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
               icon: const Icon(Icons.format_size),
               onPressed: _openTextScaleSettings,
               tooltip: '文字サイズ設定',
+            ),
+          if (widget.onThemeModeChanged != null)
+            IconButton(
+              key: AppKeys.themeModeEntry,
+              icon: const Icon(Icons.brightness_6),
+              onPressed: _openThemeModeSettings,
+              tooltip: 'テーマ設定',
             ),
         ],
       ),

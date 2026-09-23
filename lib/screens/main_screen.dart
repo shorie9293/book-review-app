@@ -4,6 +4,7 @@ import 'package:book_review_app/features/review/data/hive_review_repository.dart
 import 'package:book_review_app/features/notes/data/hive_book_note_repository.dart';
 import 'package:book_review_app/features/queue/data/hive_reading_queue_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
+import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 
 class MainScreen extends StatefulWidget {
   /// 現在の文字サイズ倍率（設定画面へ渡す）
@@ -12,10 +13,18 @@ class MainScreen extends StatefulWidget {
   /// 文字サイズ変更時のコールバック（永続化と全体再描画は上位で行う）
   final ValueChanged<double>? onScaleChanged;
 
+  /// 現在のテーマ設定（設定画面へ渡す）
+  final ThemeModeSetting themeMode;
+
+  /// テーマ変更時のコールバック
+  final ValueChanged<ThemeModeSetting>? onThemeModeChanged;
+
   const MainScreen({
     super.key,
     this.textScale = 1.0,
     this.onScaleChanged,
+    this.themeMode = ThemeModeSetting.system,
+    this.onThemeModeChanged,
   });
 
   @override
@@ -63,6 +72,8 @@ class _MainScreenState extends State<MainScreen> {
       queueRepository: _queueRepository,
       textScale: widget.textScale,
       onScaleChanged: widget.onScaleChanged,
+      themeMode: widget.themeMode,
+      onThemeModeChanged: widget.onThemeModeChanged,
     );
   }
 }
