@@ -9,6 +9,7 @@ import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/notes/presentation/book_notes_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 /// 蔵書詳細サマリー（純粋Service・UIに依存しない）。
 ///
@@ -303,7 +304,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Widget _buildSummaryCard(BookDetailSummary summary) {
     final averageRating = summary.averageRating;
     final lastActivity = summary.lastActivityAt;
-    return Card(
+    return SemanticHelper.container(
+      testId: 'book_detail_sec_summary',
+      label: 'サマリー: ${summary.progressLabel}',
+      child: Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -329,6 +333,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -342,19 +347,27 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     switch (book.readingStatus) {
       case ReadingStatus.unread:
         children.add(const SizedBox(height: 8));
-        children.add(OutlinedButton.icon(
-          key: AppKeys.bookProgressStart,
-          onPressed: _startReading,
-          icon: const Icon(Icons.play_arrow),
-          label: const Text('読書開始'),
+        children.add(SemanticHelper.interactive(
+          testId: 'book_detail_btn_start_reading',
+          label: '「${book.title}」の読書を開始',
+          child: OutlinedButton.icon(
+            key: AppKeys.bookProgressStart,
+            onPressed: _startReading,
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('読書開始'),
+          ),
         ));
       case ReadingStatus.reading:
         children.add(const SizedBox(height: 8));
-        children.add(OutlinedButton.icon(
-          key: AppKeys.bookProgressEdit,
-          onPressed: _showPageInputDialog,
-          icon: const Icon(Icons.menu_book),
-          label: const Text('ページ更新'),
+        children.add(SemanticHelper.interactive(
+          testId: 'book_detail_btn_update_progress',
+          label: '「${book.title}」の現在ページを更新',
+          child: OutlinedButton.icon(
+            key: AppKeys.bookProgressEdit,
+            onPressed: _showPageInputDialog,
+            icon: const Icon(Icons.menu_book),
+            label: const Text('ページ更新'),
+          ),
         ));
       case ReadingStatus.finished:
         break;
@@ -388,14 +401,18 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                key: AppKeys.bookProgressInput,
-                controller: controller,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: '現在ページ',
-                  errorText: error.value,
+              SemanticHelper.textField(
+                testId: 'book_detail_txt_current_page',
+                label: '現在ページを入力',
+                child: TextField(
+                  key: AppKeys.bookProgressInput,
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: '現在ページ',
+                    errorText: error.value,
+                  ),
                 ),
               ),
             ],
@@ -405,19 +422,23 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('キャンセル'),
             ),
-            FilledButton(
-              key: AppKeys.bookProgressSave,
-              onPressed: () {
-                final page = int.tryParse(controller.text.trim());
-                if (page == null) {
-                  error.value = '数値で入力してください';
-                  return;
-                }
-                Navigator.of(dialogContext).pop(
-                    ReadingStatusService.updateProgress(
-                        _book ?? widget.book, page));
-              },
-              child: const Text('保存'),
+            SemanticHelper.interactive(
+              testId: 'book_detail_btn_save_progress',
+              label: '現在ページを保存',
+              child: FilledButton(
+                key: AppKeys.bookProgressSave,
+                onPressed: () {
+                  final page = int.tryParse(controller.text.trim());
+                  if (page == null) {
+                    error.value = '数値で入力してください';
+                    return;
+                  }
+                  Navigator.of(dialogContext).pop(
+                      ReadingStatusService.updateProgress(
+                          _book ?? widget.book, page));
+                },
+                child: const Text('保存'),
+              ),
             ),
           ],
         );
@@ -435,21 +456,29 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            key: const Key('book_detail_open_reviews'),
-            onPressed: _openReviewScreen,
-            icon: const Icon(Icons.rate_review),
-            label: const Text('レビューを書く/見る'),
+          child: SemanticHelper.interactive(
+            testId: 'book_detail_btn_open_reviews',
+            label: '「${(_book ?? widget.book).title}」のレビューを書く/見る',
+            child: OutlinedButton.icon(
+              key: const Key('book_detail_open_reviews'),
+              onPressed: _openReviewScreen,
+              icon: const Icon(Icons.rate_review),
+              label: const Text('レビューを書く/見る'),
+            ),
           ),
         ),
         if (widget.noteRepository != null) ...[
           const SizedBox(width: 8),
           Expanded(
-            child: OutlinedButton.icon(
-              key: const Key('book_detail_open_notes'),
-              onPressed: _openNotesScreen,
-              icon: const Icon(Icons.edit_note),
-              label: const Text('メモ・引用'),
+            child: SemanticHelper.interactive(
+              testId: 'book_detail_btn_open_notes',
+              label: '「${(_book ?? widget.book).title}」のメモ・引用を開く',
+              child: OutlinedButton.icon(
+                key: const Key('book_detail_open_notes'),
+                onPressed: _openNotesScreen,
+                icon: const Icon(Icons.edit_note),
+                label: const Text('メモ・引用'),
+              ),
             ),
           ),
         ],

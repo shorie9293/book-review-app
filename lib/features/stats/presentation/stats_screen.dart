@@ -5,6 +5,7 @@ import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dar
 import 'package:book_review_app/features/challenge/data/hive_challenge_repository.dart';
 import 'package:book_review_app/features/stats/domain/reading_stats_service.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/stats_view_model.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// 既存 Hive リポジトリ2件を合成した [StatsDataSource] 実装。
 class _HiveStatsDataSource implements StatsDataSource {
@@ -99,11 +100,23 @@ class _StatsScreenState extends State<StatsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSummaryCard(context, stats),
+          SemanticHelper.container(
+            testId: 'stats_summary',
+            label: '${stats.year}年の読書統計: 読了${stats.totalFinished}冊',
+            child: _buildSummaryCard(context, stats),
+          ),
           const SizedBox(height: 16),
-          _buildMonthlyCard(context, stats),
+          SemanticHelper.container(
+            testId: 'stats_monthly',
+            label: '月別の読了冊数',
+            child: _buildMonthlyCard(context, stats),
+          ),
           const SizedBox(height: 16),
-          _buildAuthorCard(context, stats),
+          SemanticHelper.container(
+            testId: 'stats_author',
+            label: '著者別の読了分布',
+            child: _buildAuthorCard(context, stats),
+          ),
         ],
       ),
     );

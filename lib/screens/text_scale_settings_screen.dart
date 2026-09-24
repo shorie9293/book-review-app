@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/core/theme/text_scale_setting.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// 文字サイズ設定画面 — 3段階（小／通常／大）の選択と永続化
 class TextScaleSettingsScreen extends StatefulWidget {
@@ -49,16 +50,21 @@ class _TextScaleSettingsScreenState extends State<TextScaleSettingsScreen> {
             ),
           ),
           for (final preset in TextScaleSetting.presets)
-            RadioListTile<double>(
-              key: Key('text_scale_${preset.scale}'),
-              title: Text(preset.label),
-              value: preset.scale,
-              groupValue: current,
-              onChanged: (value) {
-                if (value == null) return;
-                widget.onScaleChanged(value);
-                setState(() {});
-              },
+            SemanticHelper.interactive(
+              testId:
+                  'text_scale_option_${preset.scale.toString().replaceAll('.', '_')}',
+              label: '文字サイズ: ${preset.label}',
+              child: RadioListTile<double>(
+                key: Key('text_scale_${preset.scale}'),
+                title: Text(preset.label),
+                value: preset.scale,
+                groupValue: current,
+                onChanged: (value) {
+                  if (value == null) return;
+                  widget.onScaleChanged(value);
+                  setState(() {});
+                },
+              ),
             ),
         ],
       ),

@@ -5,6 +5,7 @@ import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/features/notes/presentation/book_notes_screen.dart';
 import 'package:book_review_app/features/review/presentation/widgets/review_card.dart';
 import 'package:book_review_app/features/review/presentation/widgets/review_form.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// レビュー一覧画面
 ///
@@ -164,19 +165,27 @@ class _ReviewScreenState extends State<ReviewScreen> {
         title: const Text('レビュー'),
         actions: [
           if (widget.noteRepository != null)
-            IconButton(
-              key: const Key('open_notes_button'),
-              icon: const Icon(Icons.sticky_note_2_outlined),
-              tooltip: '読書メモ・引用',
-              onPressed: _openNotes,
+            SemanticHelper.interactive(
+              testId: 'review_open_notes',
+              label: '読書メモ・引用を開く',
+              child: IconButton(
+                key: const Key('open_notes_button'),
+                icon: const Icon(Icons.sticky_note_2_outlined),
+                tooltip: '読書メモ・引用',
+                onPressed: _openNotes,
+              ),
             ),
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('review_add_fab'),
-        onPressed: _showAddDialog,
-        child: const Icon(Icons.add),
+      floatingActionButton: SemanticHelper.interactive(
+        testId: 'review_add',
+        label: 'レビューを追加',
+        child: FloatingActionButton(
+          key: const Key('review_add_fab'),
+          onPressed: _showAddDialog,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -206,11 +215,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
       itemCount: _reviews.length,
       itemBuilder: (context, index) {
         final review = _reviews[index];
-        return ReviewCard(
-          key: ValueKey('review_card_${review.id}'),
-          review: review,
-          onEdit: () => _showEditDialog(review),
-          onDelete: () => _showDeleteConfirmation(review.id),
+        return SemanticHelper.container(
+          testId: SemanticHelper.createTestId('item_review', review.id),
+          label: 'レビュー: 評価${review.rating}',
+          child: ReviewCard(
+            key: ValueKey('review_card_${review.id}'),
+            review: review,
+            onEdit: () => _showEditDialog(review),
+            onDelete: () => _showDeleteConfirmation(review.id),
+          ),
         );
       },
     );

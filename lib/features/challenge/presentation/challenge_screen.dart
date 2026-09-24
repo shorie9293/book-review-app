@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/challenge/data/hive_challenge_repository.dart';
 import 'package:book_review_app/features/challenge/presentation/viewmodel/challenge_view_model.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// 年間読書チャレンジ画面。
 ///
@@ -102,19 +103,31 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   }
 
   Widget _buildBody(BuildContext context) {
+    final target = _viewModel.target;
+    final read = _viewModel.read;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildProgressCard(context),
+          SemanticHelper.container(
+            testId: 'challenge_progress_card',
+            label: target == 0
+                ? '年間読書チャレンジ: 目標未設定'
+                : '年間読書チャレンジ: $read / $target 冊読了',
+            child: _buildProgressCard(context),
+          ),
           const SizedBox(height: 16),
-          TextButton.icon(
-            key: const Key('challenge_edit_button'),
-            onPressed: _editTarget,
-            icon: const Icon(Icons.edit),
-            label: Text(
-              _viewModel.target == 0 ? '目標を設定する' : '目標を変更する',
+          SemanticHelper.interactive(
+            testId: 'challenge_set_goal',
+            label: target == 0 ? '年間の目標冊数を設定' : '年間の目標冊数を変更',
+            child: TextButton.icon(
+              key: const Key('challenge_edit_button'),
+              onPressed: _editTarget,
+              icon: const Icon(Icons.edit),
+              label: Text(
+                _viewModel.target == 0 ? '目標を設定する' : '目標を変更する',
+              ),
             ),
           ),
         ],

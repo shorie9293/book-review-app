@@ -4,6 +4,7 @@ import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/features/notes/presentation/viewmodel/book_notes_view_model.dart';
 import 'package:book_review_app/features/notes/presentation/widgets/note_card.dart';
 import 'package:book_review_app/features/notes/presentation/widgets/note_form.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// 読書メモ・引用の一覧画面。
 ///
@@ -120,11 +121,15 @@ class _BookNotesScreenState extends State<BookNotesScreen> {
           widget.bookTitle == null ? '読書メモ' : '読書メモ: ${widget.bookTitle}',
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('note_add_fab'),
-        onPressed: _showAddDialog,
-        tooltip: 'メモを追加',
-        child: const Icon(Icons.add),
+      floatingActionButton: SemanticHelper.interactive(
+        testId: 'notes_add_note',
+        label: 'メモを追加',
+        child: FloatingActionButton(
+          key: const Key('note_add_fab'),
+          onPressed: _showAddDialog,
+          tooltip: 'メモを追加',
+          child: const Icon(Icons.add),
+        ),
       ),
       body: ListenableBuilder(
         listenable: _viewModel,
@@ -192,36 +197,55 @@ class _BookNotesScreenState extends State<BookNotesScreen> {
         children: [
           Row(
             children: [
-              ChoiceChip(
-                key: const Key('note_filter_all'),
-                label: const Text('すべて'),
-                selected: _viewModel.kindFilter == null,
-                onSelected: (_) => _viewModel.setKindFilter(null),
+              SemanticHelper.toggle(
+                testId: 'notes_filter_all',
+                value: _viewModel.kindFilter == null,
+                onChanged: (_) => _viewModel.setKindFilter(null),
+                child: ChoiceChip(
+                  key: const Key('note_filter_all'),
+                  label: const Text('すべて'),
+                  selected: _viewModel.kindFilter == null,
+                  onSelected: (_) => _viewModel.setKindFilter(null),
+                ),
               ),
               const SizedBox(width: 8),
-              ChoiceChip(
-                key: const Key('note_filter_memo'),
-                label: const Text('メモ'),
-                selected: _viewModel.kindFilter == NoteKind.memo,
-                onSelected: (_) => _viewModel.setKindFilter(NoteKind.memo),
+              SemanticHelper.toggle(
+                testId: 'notes_filter_memo',
+                value: _viewModel.kindFilter == NoteKind.memo,
+                onChanged: (_) => _viewModel.setKindFilter(NoteKind.memo),
+                child: ChoiceChip(
+                  key: const Key('note_filter_memo'),
+                  label: const Text('メモ'),
+                  selected: _viewModel.kindFilter == NoteKind.memo,
+                  onSelected: (_) => _viewModel.setKindFilter(NoteKind.memo),
+                ),
               ),
               const SizedBox(width: 8),
-              ChoiceChip(
-                key: const Key('note_filter_quote'),
-                label: const Text('引用'),
-                selected: _viewModel.kindFilter == NoteKind.quote,
-                onSelected: (_) => _viewModel.setKindFilter(NoteKind.quote),
+              SemanticHelper.toggle(
+                testId: 'notes_filter_quote',
+                value: _viewModel.kindFilter == NoteKind.quote,
+                onChanged: (_) => _viewModel.setKindFilter(NoteKind.quote),
+                child: ChoiceChip(
+                  key: const Key('note_filter_quote'),
+                  label: const Text('引用'),
+                  selected: _viewModel.kindFilter == NoteKind.quote,
+                  onSelected: (_) => _viewModel.setKindFilter(NoteKind.quote),
+                ),
               ),
             ],
           ),
-          TextField(
-            key: const Key('note_search_field'),
-            controller: _searchController,
-            onChanged: _viewModel.setKeyword,
-            decoration: const InputDecoration(
-              hintText: '本文・タグで検索',
-              prefixIcon: Icon(Icons.search),
-              isDense: true,
+          SemanticHelper.textField(
+            testId: 'notes_search_field',
+            label: '本文・タグで検索',
+            child: TextField(
+              key: const Key('note_search_field'),
+              controller: _searchController,
+              onChanged: _viewModel.setKeyword,
+              decoration: const InputDecoration(
+                hintText: '本文・タグで検索',
+                prefixIcon: Icon(Icons.search),
+                isDense: true,
+              ),
             ),
           ),
         ],
@@ -241,13 +265,19 @@ class _BookNotesScreenState extends State<BookNotesScreen> {
       itemCount: notes.length,
       itemBuilder: (context, index) {
         final note = notes[index];
-        return NoteCard(
-          key: ValueKey('note_card_${note.id}'),
-          note: note,
-          onEdit: () => _showEditDialog(note),
-          onDelete: () => _showDeleteConfirmation(note),
-          onToggleFavorite: () =>
-              _viewModel.toggleFavorite(widget.repository, note),
+        return SemanticHelper.container(
+          testId: SemanticHelper.createTestId('item_note', note.id),
+          label: note.isFavorite
+              ? 'メモ: ${note.content}（お気に入り済み）'
+              : 'メモ: ${note.content}',
+          child: NoteCard(
+            key: ValueKey('note_card_${note.id}'),
+            note: note,
+            onEdit: () => _showEditDialog(note),
+            onDelete: () => _showDeleteConfirmation(note),
+            onToggleFavorite: () =>
+                _viewModel.toggleFavorite(widget.repository, note),
+          ),
         );
       },
     );

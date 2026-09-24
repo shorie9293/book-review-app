@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/repositories/reading_queue_repository.dart';
 import 'package:book_review_app/features/queue/presentation/viewmodel/reading_queue_view_model.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// 「次に読む」キュー画面。
 ///
@@ -53,11 +54,15 @@ class _ReadingQueueScreenState extends State<ReadingQueueScreen> {
       appBar: AppBar(
         title: const Text('次に読む'),
       ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('reading_queue_add_fab'),
-        onPressed: _openAddSheet,
-        tooltip: '積読から追加',
-        child: const Icon(Icons.add),
+      floatingActionButton: SemanticHelper.interactive(
+        testId: 'queue_add_book',
+        label: '積読から読書キューに追加',
+        child: FloatingActionButton(
+          key: const Key('reading_queue_add_fab'),
+          onPressed: _openAddSheet,
+          tooltip: '積読から追加',
+          child: const Icon(Icons.add),
+        ),
       ),
       body: AnimatedBuilder(
         animation: _viewModel,
@@ -84,8 +89,11 @@ class _ReadingQueueScreenState extends State<ReadingQueueScreen> {
           final next = _viewModel.nextToRead!;
           return ListView(
             children: [
-              Card(
-                key: const Key('reading_queue_next_card'),
+              SemanticHelper.container(
+                testId: 'queue_next_card',
+                label: '次に読む一冊: ${next.title}',
+                child: Card(
+                  key: const Key('reading_queue_next_card'),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -106,11 +114,16 @@ class _ReadingQueueScreenState extends State<ReadingQueueScreen> {
                     ],
                   ),
                 ),
+                ),
               ),
               const Divider(),
               for (var i = 0; i < queue.length; i++)
-                _buildRow(context, i + 1, queue[i], i == 0,
-                    i == queue.length - 1),
+                SemanticHelper.container(
+                  testId: SemanticHelper.createTestId('item_queue', queue[i].id),
+                  label: 'キュー${i + 1}番目: ${queue[i].title}',
+                  child: _buildRow(context, i + 1, queue[i], i == 0,
+                      i == queue.length - 1),
+                ),
             ],
           );
         },
@@ -169,27 +182,39 @@ class _ReadingQueueScreenState extends State<ReadingQueueScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            key: const Key('reading_queue_move_up_button'),
-            icon: const Icon(Icons.arrow_upward),
-            onPressed: isFirst
-                ? null
-                : () => _viewModel.moveUp(widget.repository, book.id),
-            tooltip: '前へ',
+          SemanticHelper.interactive(
+            testId: SemanticHelper.createTestId('queue_move_up', book.id),
+            label: '$position番目の「${book.title}」を前へ移動',
+            child: IconButton(
+              key: const Key('reading_queue_move_up_button'),
+              icon: const Icon(Icons.arrow_upward),
+              onPressed: isFirst
+                  ? null
+                  : () => _viewModel.moveUp(widget.repository, book.id),
+              tooltip: '前へ',
+            ),
           ),
-          IconButton(
-            key: const Key('reading_queue_move_down_button'),
-            icon: const Icon(Icons.arrow_downward),
-            onPressed: isLast
-                ? null
-                : () => _viewModel.moveDown(widget.repository, book.id),
-            tooltip: '後へ',
+          SemanticHelper.interactive(
+            testId: SemanticHelper.createTestId('queue_move_down', book.id),
+            label: '$position番目の「${book.title}」を後へ移動',
+            child: IconButton(
+              key: const Key('reading_queue_move_down_button'),
+              icon: const Icon(Icons.arrow_downward),
+              onPressed: isLast
+                  ? null
+                  : () => _viewModel.moveDown(widget.repository, book.id),
+              tooltip: '後へ',
+            ),
           ),
-          IconButton(
-            key: const Key('reading_queue_remove_button'),
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _viewModel.remove(widget.repository, book.id),
-            tooltip: 'キューから削除',
+          SemanticHelper.interactive(
+            testId: SemanticHelper.createTestId('queue_remove', book.id),
+            label: '「${book.title}」をキューから削除',
+            child: IconButton(
+              key: const Key('reading_queue_remove_button'),
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _viewModel.remove(widget.repository, book.id),
+              tooltip: 'キューから削除',
+            ),
           ),
         ],
       ),

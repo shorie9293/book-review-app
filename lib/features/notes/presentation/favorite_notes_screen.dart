@@ -3,6 +3,7 @@ import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/features/notes/domain/book_note_service.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// お気に入りの引用を横断的に一覧表示する画面。
 ///
@@ -110,31 +111,40 @@ class _FavoriteNotesScreenState extends State<FavoriteNotesScreen> {
       items.addAll(entry.value.map(_buildRow));
     }
 
-    return ListView.builder(
-      key: const Key('favorite_note_list'),
-      itemCount: items.length,
-      itemBuilder: (context, index) => items[index],
+    return SemanticHelper.container(
+      testId: 'favorite_note_list',
+      label: 'お気に入りの引用一覧',
+      explicitChildNodes: true,
+      child: ListView.builder(
+        key: const Key('favorite_note_list'),
+        itemCount: items.length,
+        itemBuilder: (context, index) => items[index],
+      ),
     );
   }
 
   Widget _buildRow(BookNote note) {
     final title = _bookTitle(note.bookId);
-    return ListTile(
-      key: ValueKey('favorite_note_${note.id}'),
-      title: Text(
-        note.content,
-        key: const Key('favorite_note_row'),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('$title ・ ${note.pageLabel}'),
-          if (note.tags.isNotEmpty)
-            Text(note.tags.join('、'),
-                style: const TextStyle(fontSize: 11, color: Colors.grey)),
-        ],
+    return SemanticHelper.container(
+      testId: SemanticHelper.createTestId('item_favorite', note.id),
+      label: '引用をお気に入りに追加済み: ${note.content}',
+      child: ListTile(
+        key: ValueKey('favorite_note_${note.id}'),
+        title: Text(
+          note.content,
+          key: const Key('favorite_note_row'),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$title ・ ${note.pageLabel}'),
+            if (note.tags.isNotEmpty)
+              Text(note.tags.join('、'),
+                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          ],
+        ),
       ),
     );
   }

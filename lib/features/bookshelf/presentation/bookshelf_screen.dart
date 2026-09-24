@@ -19,6 +19,7 @@ import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 class BookshelfScreen extends StatefulWidget {
   final BookRepository repository;
@@ -250,69 +251,101 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
       appBar: AppBar(
         title: const Text('本棚'),
         actions: [
-          IconButton(
-            key: const Key('stats_button'),
-            icon: const Icon(Icons.bar_chart),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const StatsScreen(),
-                ),
-              );
-            },
-            tooltip: '読書統計',
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_stats',
+            label: '読書統計を開く',
+            child: IconButton(
+              key: const Key('stats_button'),
+              icon: const Icon(Icons.bar_chart),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const StatsScreen(),
+                  ),
+                );
+              },
+              tooltip: '読書統計',
+            ),
           ),
-          IconButton(
-            key: const Key('challenge_button'),
-            icon: const Icon(Icons.emoji_events),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const ChallengeScreen(),
-                ),
-              );
-            },
-            tooltip: '年間読書チャレンジ',
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_challenge',
+            label: '年間読書チャレンジを開く',
+            child: IconButton(
+              key: const Key('challenge_button'),
+              icon: const Icon(Icons.emoji_events),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ChallengeScreen(),
+                  ),
+                );
+              },
+              tooltip: '年間読書チャレンジ',
+            ),
           ),
-          IconButton(
-            key: const Key('scan_barcode_button'),
-            icon: const Icon(Icons.camera_alt),
-            onPressed: _openBarcodeScanner,
-            tooltip: 'バーコードスキャン',
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_scan_barcode',
+            label: 'バーコードスキャンを開く',
+            child: IconButton(
+              key: const Key('scan_barcode_button'),
+              icon: const Icon(Icons.camera_alt),
+              onPressed: _openBarcodeScanner,
+              tooltip: 'バーコードスキャン',
+            ),
           ),
-          IconButton(
-            key: const Key('bulk_import_button'),
-            icon: const Icon(Icons.library_add),
-            onPressed: _openBulkImport,
-            tooltip: '一括インポート',
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_bulk_import',
+            label: '一括インポートを開く',
+            child: IconButton(
+              key: const Key('bulk_import_button'),
+              icon: const Icon(Icons.library_add),
+              onPressed: _openBulkImport,
+              tooltip: '一括インポート',
+            ),
           ),
           if (widget.queueRepository != null)
-            IconButton(
-              key: const Key('reading_queue_button'),
-              icon: const Icon(Icons.playlist_play),
-              onPressed: _openReadingQueue,
-              tooltip: '次に読む',
+            SemanticHelper.interactive(
+              testId: 'bookshelf_btn_reading_queue',
+              label: '次に読むキューを開く',
+              child: IconButton(
+                key: const Key('reading_queue_button'),
+                icon: const Icon(Icons.playlist_play),
+                onPressed: _openReadingQueue,
+                tooltip: '次に読む',
+              ),
             ),
           if (widget.noteRepository != null)
-            IconButton(
-              key: const Key('open_favorites_button'),
-              icon: const Icon(Icons.star_outline),
-              onPressed: _openFavoriteNotes,
-              tooltip: 'お気に入りの引用',
+            SemanticHelper.interactive(
+              testId: 'bookshelf_btn_open_favorites',
+              label: 'お気に入りの引用を開く',
+              child: IconButton(
+                key: const Key('open_favorites_button'),
+                icon: const Icon(Icons.star_outline),
+                onPressed: _openFavoriteNotes,
+                tooltip: 'お気に入りの引用',
+              ),
             ),
           if (widget.onScaleChanged != null)
-            IconButton(
-              key: const Key('text_scale_settings_button'),
-              icon: const Icon(Icons.format_size),
-              onPressed: _openTextScaleSettings,
-              tooltip: '文字サイズ設定',
+            SemanticHelper.interactive(
+              testId: 'bookshelf_btn_text_scale_settings',
+              label: '文字サイズ設定を開く',
+              child: IconButton(
+                key: const Key('text_scale_settings_button'),
+                icon: const Icon(Icons.format_size),
+                onPressed: _openTextScaleSettings,
+                tooltip: '文字サイズ設定',
+              ),
             ),
           if (widget.onThemeModeChanged != null)
-            IconButton(
-              key: AppKeys.themeModeEntry,
-              icon: const Icon(Icons.brightness_6),
-              onPressed: _openThemeModeSettings,
-              tooltip: 'テーマ設定',
+            SemanticHelper.interactive(
+              testId: 'bookshelf_btn_theme_mode_settings',
+              label: 'テーマ設定を開く',
+              child: IconButton(
+                key: AppKeys.themeModeEntry,
+                icon: const Icon(Icons.brightness_6),
+                onPressed: _openThemeModeSettings,
+                tooltip: 'テーマ設定',
+              ),
             ),
         ],
       ),
@@ -345,28 +378,36 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  key: const Key('isbn_search_field'),
-                  controller: _isbnController,
-                  decoration: const InputDecoration(
-                    labelText: 'ISBNで検索',
-                    hintText: '978-4-7741-8907-9',
-                    border: OutlineInputBorder(),
+                child: SemanticHelper.textField(
+                  testId: 'bookshelf_txt_isbn_search',
+                  label: 'ISBNで検索',
+                  child: TextField(
+                    key: const Key('isbn_search_field'),
+                    controller: _isbnController,
+                    decoration: const InputDecoration(
+                      labelText: 'ISBNで検索',
+                      hintText: '978-4-7741-8907-9',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.text,
                   ),
-                  keyboardType: TextInputType.text,
                 ),
               ),
               const SizedBox(width: 8),
-              ElevatedButton(
-                key: const Key('isbn_search_button'),
-                onPressed: _isSearching ? null : _searchByIsbn,
-                child: _isSearching
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('検索'),
+              SemanticHelper.interactive(
+                testId: 'bookshelf_btn_isbn_search',
+                label: 'ISBNで書籍を検索',
+                child: ElevatedButton(
+                  key: const Key('isbn_search_button'),
+                  onPressed: _isSearching ? null : _searchByIsbn,
+                  child: _isSearching
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('検索'),
+                ),
               ),
             ],
           ),
@@ -431,10 +472,14 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                   Text(book.author, style: TextStyle(color: Colors.grey[600])),
                   if (book.publisher != null) Text(book.publisher!, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                   const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => _addBookToShelf(book),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('本棚に追加'),
+                  SemanticHelper.interactive(
+                    testId: 'bookshelf_btn_add_found_book',
+                    label: '「${book.title}」を本棚に追加',
+                    child: ElevatedButton.icon(
+                      onPressed: () => _addBookToShelf(book),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('本棚に追加'),
+                    ),
                   ),
                 ],
               ),
@@ -458,7 +503,11 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
         itemCount: visibleBooks.length,
         itemBuilder: (context, index) {
           final book = visibleBooks[index];
-          return ListTile(
+          return SemanticHelper.interactive(
+            testId: SemanticHelper.createTestId(
+                'bookshelf_book_tile', book.id),
+            label: '書籍「${book.title}」を開く',
+            child: ListTile(
             leading: book.coverImageUrl != null && book.coverImageUrl!.isNotEmpty
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(4),
@@ -489,16 +538,22 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                   tooltip: '読書状態を変更',
                   onPressed: () => _showReadingStatusDialog(book),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () async {
-                    await widget.repository.removeBook(book.id);
-                    await _loadBooks();
-                  },
+                SemanticHelper.interactive(
+                  testId: SemanticHelper.createTestId(
+                      'bookshelf_btn_delete_book', book.id),
+                  label: '書籍「${book.title}」を本棚から削除',
+                  child: IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      await widget.repository.removeBook(book.id);
+                      await _loadBooks();
+                    },
+                  ),
                 ),
               ],
             ),
             onTap: () => _navigateToReviews(book),
+            ),
           );
         },
     );
@@ -534,12 +589,16 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             SimpleDialogOption(
               key: Key('status_option_${status.name}'),
               onPressed: () => Navigator.of(context).pop(status),
-              child: Row(
-                children: [
-                  _statusIcon(status),
-                  const SizedBox(width: 12),
-                  Text(status.label),
-                ],
+              child: SemanticHelper.interactive(
+                testId: 'bookshelf_status_option_${status.name}',
+                label: '「${book.title}」の読書状態を${status.label}に変更',
+                child: Row(
+                  children: [
+                    _statusIcon(status),
+                    const SizedBox(width: 12),
+                    Text(status.label),
+                  ],
+                ),
               ),
             ),
         ],

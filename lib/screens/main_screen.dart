@@ -5,6 +5,7 @@ import 'package:book_review_app/features/notes/data/hive_book_note_repository.da
 import 'package:book_review_app/features/queue/data/hive_reading_queue_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 class MainScreen extends StatefulWidget {
   /// 現在の文字サイズ倍率（設定画面へ渡す）
@@ -60,8 +61,12 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_initialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return SemanticHelper.container(
+        testId: 'main_sec_loading',
+        label: '読み込み中',
+        child: const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 

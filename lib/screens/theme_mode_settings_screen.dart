@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 /// テーマ設定画面 — ライト／ダーク／システムの選択と永続化
 class ThemeModeSettingsScreen extends StatefulWidget {
@@ -31,17 +32,21 @@ class _ThemeModeSettingsScreenState extends State<ThemeModeSettingsScreen> {
             child: Text('アプリの外観テーマを選択できます。「システム」は端末設定に従います。'),
           ),
           for (final mode in ThemeModeSetting.values)
-            RadioListTile<ThemeModeSetting>(
-              key: AppKeys.themeModeOption(mode.storageKey),
-              title: Text(mode.label),
-              secondary: Icon(mode.icon),
-              value: mode,
-              groupValue: widget.currentMode,
-              onChanged: (value) {
-                if (value == null) return;
-                widget.onModeChanged(value);
-                setState(() {});
-              },
+            SemanticHelper.interactive(
+              testId: 'theme_mode_option_${mode.storageKey}',
+              label: 'テーマ: ${mode.label}',
+              child: RadioListTile<ThemeModeSetting>(
+                key: AppKeys.themeModeOption(mode.storageKey),
+                title: Text(mode.label),
+                secondary: Icon(mode.icon),
+                value: mode,
+                groupValue: widget.currentMode,
+                onChanged: (value) {
+                  if (value == null) return;
+                  widget.onModeChanged(value);
+                  setState(() {});
+                },
+              ),
             ),
         ],
       ),

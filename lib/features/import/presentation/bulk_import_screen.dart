@@ -4,6 +4,7 @@ import 'package:book_review_app/features/bookshelf/data/book_search_service.dart
 import 'package:book_review_app/features/import/domain/bulk_import_parser.dart';
 import 'package:book_review_app/features/import/domain/bulk_import_service.dart';
 import 'package:book_review_app/features/import/presentation/viewmodel/bulk_import_view_model.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// 蔵書の一括インポート画面。
 ///
@@ -111,37 +112,51 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
             style: TextStyle(color: Colors.grey[600], fontSize: 12),
           ),
           const SizedBox(height: 8),
-          TextField(
-            key: const Key('bulk_import_text_field'),
-            controller: _controller,
-            minLines: 6,
-            maxLines: 12,
-            keyboardType: TextInputType.multiline,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: '9784774189079\n9784123456784',
+          SemanticHelper.textField(
+            testId: 'import_text_field',
+            label: _viewModel.mode == BulkImportMode.isbnList
+                ? 'ISBNリストの貼り付け欄'
+                : 'CSVの貼り付け欄',
+            child: TextField(
+              key: const Key('bulk_import_text_field'),
+              controller: _controller,
+              minLines: 6,
+              maxLines: 12,
+              keyboardType: TextInputType.multiline,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: '9784774189079\n9784123456784',
+              ),
             ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  key: const Key('bulk_import_parse_button'),
-                  onPressed: _viewModel.isImporting ? null : () => _viewModel.parse(_controller.text),
-                  icon: const Icon(Icons.search),
-                  label: const Text('解析'),
+                child: SemanticHelper.interactive(
+                  testId: 'import_parse',
+                  label: '入力内容を解析',
+                  child: ElevatedButton.icon(
+                    key: const Key('bulk_import_parse_button'),
+                    onPressed: _viewModel.isImporting ? null : () => _viewModel.parse(_controller.text),
+                    icon: const Icon(Icons.search),
+                    label: const Text('解析'),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
-                  key: const Key('bulk_import_run_button'),
-                  onPressed: (preview != null && preview.hasImportable && !_viewModel.isImporting)
-                      ? _runImport
-                      : null,
-                  icon: const Icon(Icons.download_done),
-                  label: const Text('取り込む'),
+                child: SemanticHelper.interactive(
+                  testId: 'import_run',
+                  label: '蔵書を取り込む',
+                  child: ElevatedButton.icon(
+                    key: const Key('bulk_import_run_button'),
+                    onPressed: (preview != null && preview.hasImportable && !_viewModel.isImporting)
+                        ? _runImport
+                        : null,
+                    icon: const Icon(Icons.download_done),
+                    label: const Text('取り込む'),
+                  ),
                 ),
               ),
             ],
@@ -211,20 +226,24 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
   }
 
   Widget _buildReport(BulkImportReport report) {
-    return Card(
-      key: const Key('bulk_import_report'),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('取り込み結果', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('追加 ${report.addedCount} 冊'),
-            Text('登録済（スキップ） ${report.skippedCount} 冊'),
-            if (report.notFoundCount > 0) Text('書誌が見つからず ${report.notFoundCount} 冊'),
-            if (report.failedCount > 0) Text('失敗 ${report.failedCount} 冊'),
-          ],
+    return SemanticHelper.container(
+      testId: 'import_report',
+      label: '取り込み結果: 追加${report.addedCount}冊',
+      child: Card(
+        key: const Key('bulk_import_report'),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('取り込み結果', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('追加 ${report.addedCount} 冊'),
+              Text('登録済（スキップ） ${report.skippedCount} 冊'),
+              if (report.notFoundCount > 0) Text('書誌が見つからず ${report.notFoundCount} 冊'),
+              if (report.failedCount > 0) Text('失敗 ${report.failedCount} 冊'),
+            ],
+          ),
         ),
       ),
     );

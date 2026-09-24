@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/features/bookshelf/data/book_search_service.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// バーコードスキャン画面
 ///
@@ -21,8 +22,7 @@ class BarcodeScannerScreen extends StatefulWidget {
 }
 
 class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
-  final MobileScannerController _cameraController =
-      MobileScannerController();
+  final MobileScannerController _cameraController = MobileScannerController();
   bool _isScanning = false;
   String? _lastScannedIsbn;
   DateTime? _lastScanTime;
@@ -92,8 +92,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (book.coverImageUrl != null &&
-                  book.coverImageUrl!.isNotEmpty)
+              if (book.coverImageUrl != null && book.coverImageUrl!.isNotEmpty)
                 Center(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
@@ -137,9 +136,13 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             onPressed: () => Navigator.pop(context, false),
             child: const Text('キャンセル'),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('追加'),
+          SemanticHelper.interactive(
+            testId: 'barcode_btn_add_scanned_book',
+            label: '「${book.title}」を本棚に追加',
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('追加'),
+            ),
           ),
         ],
       ),
@@ -191,18 +194,22 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             left: 0,
             right: 0,
             child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'バーコードを枠内に合わせてください',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
+              child: SemanticHelper.container(
+                testId: 'barcode_sec_scan_guide',
+                label: 'バーコードを枠内に合わせてください',
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'バーコードを枠内に合わせてください',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
