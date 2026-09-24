@@ -206,6 +206,14 @@ void main() {
       note('n1', kind: NoteKind.quote, pageNumber: 42),
       note('n2', kind: NoteKind.memo),
     ]);
+    // 進行ページ管理(#89)でボタンが増え、メモ行はListViewの遅延描画範囲外に
+    // なり得るためスクロールしてから検証する。
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('book_detail_note_row_n1')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('book_detail_note_row_n1')), findsOneWidget);
     expect(find.byKey(const Key('book_detail_note_row_n2')), findsOneWidget);
     expect(find.byKey(const Key('book_detail_empty_notes')), findsNothing);
@@ -259,3 +267,14 @@ void main() {
     expect(find.byKey(const Key('book_detail_open_notes')), findsNothing);
   });
 }
+
+/// 進行ページ管理（#89）試練用: updateBook を記録するモック。
+class RecordingBookRepository extends MockBookRepository {
+  final List<Book> saved = [];
+  @override
+  Future<void> updateBook(Book book) async {
+    saved.add(book);
+  }
+}
+
+/// 進行ページ管理（#89）試練は book_progress_update_test.dart へ。

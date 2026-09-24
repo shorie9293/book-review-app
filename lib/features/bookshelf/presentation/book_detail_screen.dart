@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
+import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
@@ -182,6 +184,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   List<BookNote> _notes = const [];
   bool _loading = true;
 
+  /// 進行ページ更新で変わった最新の本（widget.book を上書きする）。
+  Book? _book;
+
   @override
   void initState() {
     super.initState();
@@ -232,7 +237,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final book = widget.book;
+    final book = _book ?? widget.book;
     final summary = BookDetailSummary.build(book, _reviews, _notes);
 
     return Scaffold(
@@ -329,14 +334,101 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   Widget _buildProgressSection(Book book) {
     final summary = BookDetailSummary.build(book, _reviews, _notes);
+    final children = <Widget>[
+      Text('読書進捗', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 4),
+      Text(summary.progressLabel),
+    ];
+    switch (book.readingStatus) {
+      case ReadingStatus.unread:
+        children.add(const SizedBox(height: 8));
+        children.add(OutlinedButton.icon(
+          key: AppKeys.bookProgressStart,
+          onPressed: _startReading,
+          icon: const Icon(Icons.play_arrow),
+          label: const Text('読書開始'),
+        ));
+      case ReadingStatus.reading:
+        children.add(const SizedBox(height: 8));
+        children.add(OutlinedButton.icon(
+          key: AppKeys.bookProgressEdit,
+          onPressed: _showPageInputDialog,
+          icon: const Icon(Icons.menu_book),
+          label: const Text('ページ更新'),
+        ));
+      case ReadingStatus.finished:
+        break;
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('読書進捗', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 4),
-        Text(summary.progressLabel),
-      ],
+      children: children,
     );
+  }
+
+  /// 読書開始を記録して永続化する。
+  Future<void> _startReading() async {
+    final updated = ReadingStatusService.markStarted(widget.book);
+    await widget.bookRepository.updateBook(updated);
+    if (!mounted) return;
+    setState(() {
+      _book = updated;
+    });
+  }
+
+  /// 現在ページ入力ダイアログを表示する。
+  Future<void> _showPageInputDialog() async {
+    final controller =
+        TextEditingController(text: '${_book?.currentPage ?? 0}');
+    final error = ValueNotifier<String?>(null);
+    final saved = await showDialog<Book>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('現在ページを入力'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: AppKeys.bookProgressInput,
+                controller: controller,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: '現在ページ',
+                  errorText: error.value,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('キャンセル'),
+            ),
+            FilledButton(
+              key: AppKeys.bookProgressSave,
+              onPressed: () {
+                final page = int.tryParse(controller.text.trim());
+                if (page == null) {
+                  error.value = '数値で入力してください';
+                  return;
+                }
+                Navigator.of(dialogContext).pop(
+                    ReadingStatusService.updateProgress(
+                        _book ?? widget.book, page));
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
+    );
+    if (saved == null || !mounted) return;
+    await widget.bookRepository.updateBook(saved);
+    if (!mounted) return;
+    setState(() {
+      _book = saved;
+    });
   }
 
   Widget _buildActionButtons() {
