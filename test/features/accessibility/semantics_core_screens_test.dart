@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:book_review_app/domain/models/book.dart';
-import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
