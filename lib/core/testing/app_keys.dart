@@ -25,4 +25,25 @@ class AppKeys {
 
   /// 蔵書詳細: 読書開始ボタン（未読の本のみ表示）
   static const Key bookProgressStart = Key('book_progress_start');
+
+  /// 蔵書詳細: ジャンル追加ボタン
+  static const Key genreAdd = Key('genre_add');
+
+  /// 蔵書詳細: ジャンル追加ダイアログ
+  static const Key genreDialog = Key('genre_dialog');
+
+  /// 蔵書詳細: ジャンル入力欄（ダイアログ内）
+  static const Key genreInput = Key('genre_input');
+
+  /// 蔵書詳細: ジャンル保存ボタン（ダイアログ内）
+  static const Key genreSave = Key('genre_save');
+
+  /// 蔵書詳細: 指定ジャンルのチップ表示
+  static Key genreChip(String genre) => Key('genre_chip_$genre');
+
+  /// 蔵書詳細: 指定ジャンルの削除導線
+  static Key genreRemove(String genre) => Key('genre_remove_$genre');
+
+  /// 本棚: 指定ジャンルの絞り込みチップ
+  static Key genreFilterChip(String genre) => Key('library_genre_chip_$genre');
 }

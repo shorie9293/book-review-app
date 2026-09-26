@@ -3,6 +3,7 @@ import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/book_search_service.dart';
+import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
 import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
@@ -357,6 +358,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             query: _query,
             totalCount: _books.length,
             filteredCount: _visibleBooks.length,
+            genres: GenreService.availableGenres(_books),
+            genreCounts: GenreService.countByGenre(_books),
             onChanged: (query) => setState(() => _query = query),
           ),
           Expanded(child: _buildBookList()),

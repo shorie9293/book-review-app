@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 
@@ -14,12 +15,20 @@ class LibraryFilterBar extends StatelessWidget {
 
   final ValueChanged<LibraryQuery> onChanged;
 
+  /// 絞り込みに提示するジャンル一覧（件数降順・正規化済み）。
+  final List<String> genres;
+
+  /// ジャンルごとの蔵書件数（チップの表示用）。
+  final Map<String, int> genreCounts;
+
   const LibraryFilterBar({
     super.key,
     required this.query,
     required this.totalCount,
     required this.filteredCount,
     required this.onChanged,
+    this.genres = const [],
+    this.genreCounts = const {},
   });
 
   @override
@@ -97,6 +106,36 @@ class LibraryFilterBar extends StatelessWidget {
               ],
             ],
           ),
+          if (genres.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 40,
+              child: ListView(
+                key: const Key('library_genre_chip_list'),
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final genre in genres)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        key: AppKeys.genreFilterChip(genre),
+                        label: Text(
+                          genreCounts[genre] != null
+                              ? '$genre (${genreCounts[genre]})'
+                              : genre,
+                        ),
+                        selected: query.genres.contains(genre),
+                        onSelected: (selected) {
+                          final next = Set<String>.from(query.genres);
+                          selected ? next.add(genre) : next.remove(genre);
+                          onChanged(query.copyWith(genres: next));
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

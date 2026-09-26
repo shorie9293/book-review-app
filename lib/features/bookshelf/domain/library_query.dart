@@ -1,5 +1,6 @@
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
+import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
 
 /// 本棚の並び替え順
 enum LibrarySortOrder {
@@ -40,12 +41,16 @@ class LibraryQuery {
   /// 絞り込む読書状態（空なら全状態）
   final Set<ReadingStatus> statuses;
 
+  /// 絞り込むジャンル（正規化済み・空なら全ジャンル）
+  final Set<String> genres;
+
   /// 並び替え順
   final LibrarySortOrder sortOrder;
 
   const LibraryQuery({
     this.text = '',
     this.statuses = const {},
+    this.genres = const {},
     this.sortOrder = LibrarySortOrder.addedAtDesc,
   });
 
@@ -53,13 +58,16 @@ class LibraryQuery {
   LibraryQuery copyWith({
     String? text,
     Set<ReadingStatus>? statuses,
+    Set<String>? genres,
     LibrarySortOrder? sortOrder,
     bool clearText = false,
     bool clearStatuses = false,
+    bool clearGenres = false,
   }) {
     return LibraryQuery(
       text: clearText ? '' : (text ?? this.text),
       statuses: clearStatuses ? const {} : (statuses ?? this.statuses),
+      genres: clearGenres ? const {} : (genres ?? this.genres),
       sortOrder: sortOrder ?? this.sortOrder,
     );
   }
@@ -68,12 +76,14 @@ class LibraryQuery {
   bool get isDefault =>
       text.isEmpty &&
       statuses.isEmpty &&
+      genres.isEmpty &&
       sortOrder == LibrarySortOrder.addedAtDesc;
 
   /// 有効な絞り込み条件の数（text / statuses / 非既定ソート）。
   int get activeFilterCount =>
       (text.trim().isEmpty ? 0 : 1) +
       statuses.length +
+      (genres.isEmpty ? 0 : 1) +
       (sortOrder == LibrarySortOrder.addedAtDesc ? 0 : 1);
 }
 
@@ -128,6 +138,15 @@ class LibraryQueryService {
       result = result.where((entry) {
         final (i, book) = entry;
         return statuses.contains(book.readingStatus);
+      });
+    }
+
+    // ジャンル絞り込み（空なら全ジャンル）
+    final genres = query.genres;
+    if (genres.isNotEmpty) {
+      result = result.where((entry) {
+        final (i, book) = entry;
+        return GenreService.matches(book, genres);
       });
     }
 

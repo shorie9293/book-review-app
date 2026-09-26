@@ -3,6 +3,7 @@ import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
+import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
@@ -259,6 +260,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 _buildReviewSection(),
                 const SizedBox(height: 16),
                 _buildNoteSection(),
+                const SizedBox(height: 16),
+                _buildGenreSection(book),
               ],
             ),
     );
@@ -450,6 +453,138 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     setState(() {
       _book = saved;
     });
+  }
+
+  /// ジャンルの付与・編集セクション。
+  ///
+  /// 追加・削除は必ず [BookRepository.updateBook] へ到達させて永続化する。
+  Widget _buildGenreSection(Book book) {
+    final genres = GenreService.canonicalList(book.genres);
+    return Card(
+      key: const Key('book_detail_sec_genres'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.sell_outlined, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  'ジャンル',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  key: AppKeys.genreAdd,
+                  onPressed: _showGenreInputDialog,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('ジャンルを追加'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (genres.isEmpty)
+              Text(
+                'ジャンル未設定',
+                style: TextStyle(color: Colors.grey.shade600),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final genre in genres)
+                    Chip(
+                      key: AppKeys.genreChip(genre),
+                      label: Text(genre),
+                      deleteIcon: Icon(
+                        Icons.close,
+                        size: 16,
+                        key: AppKeys.genreRemove(genre),
+                      ),
+                      deleteButtonTooltipMessage: '削除',
+                      onDeleted: () => _removeGenre(genre),
+                    ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// ジャンル一覧を永続化して画面へ反映する。
+  Future<void> _persistGenres(List<String> genres) async {
+    final current = _book ?? widget.book;
+    final canonical = GenreService.canonicalList(genres);
+    final updated = canonical.isEmpty
+        ? current.copyWith(clearGenres: true)
+        : current.copyWith(genres: canonical);
+    await widget.bookRepository.updateBook(updated);
+    if (!mounted) return;
+    setState(() => _book = updated);
+  }
+
+  /// 指定ジャンルを蔵書から取り除く。
+  Future<void> _removeGenre(String genre) async {
+    final current = _book ?? widget.book;
+    final next = GenreService.canonicalList(current.genres)
+        .where((g) => g != genre)
+        .toList(growable: false);
+    await _persistGenres(next);
+  }
+
+  /// ジャンル入力ダイアログを開き、検証を通過したら追加する。
+  Future<void> _showGenreInputDialog() async {
+    final current = _book ?? widget.book;
+    final existing = GenreService.canonicalList(current.genres);
+    final controller = TextEditingController();
+    String? error;
+
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          key: AppKeys.genreDialog,
+          title: const Text('ジャンルを追加'),
+          content: TextField(
+            key: AppKeys.genreInput,
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: 'ジャンル名',
+              hintText: '小説・技術書 など',
+              errorText: error,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('やめる'),
+            ),
+            TextButton(
+              key: AppKeys.genreSave,
+              onPressed: () {
+                final message =
+                    GenreService.validateNew(existing, controller.text);
+                if (message != null) {
+                  setDialogState(() => error = message);
+                  return;
+                }
+                Navigator.of(dialogContext)
+                    .pop(GenreService.normalize(controller.text));
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (value == null || value.isEmpty) return;
+    await _persistGenres([...existing, value]);
   }
 
   Widget _buildActionButtons() {

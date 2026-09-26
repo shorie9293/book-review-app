@@ -15,6 +15,9 @@ class Book {
   final int? pageCount;
   final String? description;
 
+  /// 本のジャンル（正規化は GenreService に委ねる）
+  final List<String> genres;
+
   /// 読書状態（積読/読書中/読了）
   final ReadingStatus readingStatus;
 
@@ -37,6 +40,7 @@ class Book {
     this.publishedDate,
     this.pageCount,
     this.description,
+    this.genres = const [],
     this.readingStatus = ReadingStatus.unread,
     this.currentPage = 0,
     this.finishedAt,
@@ -51,6 +55,8 @@ class Book {
     bool clearFinishedAt = false,
     DateTime? addedAt,
     bool clearAddedAt = false,
+    List<String>? genres,
+    bool clearGenres = false,
   }) {
     return Book(
       id: id,
@@ -66,6 +72,7 @@ class Book {
       currentPage: currentPage ?? this.currentPage,
       finishedAt: clearFinishedAt ? null : (finishedAt ?? this.finishedAt),
       addedAt: clearAddedAt ? null : (addedAt ?? this.addedAt),
+      genres: clearGenres ? const [] : (genres ?? this.genres),
     );
   }
 
