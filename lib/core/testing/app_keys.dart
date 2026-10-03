@@ -46,4 +46,28 @@ class AppKeys {
 
   /// 本棚: 指定ジャンルの絞り込みチップ
   static Key genreFilterChip(String genre) => Key('library_genre_chip_$genre');
+
+  /// 停滞本一覧: 件数ラベル
+  static const Key stagnantCountLabel = Key('stagnant_count_label');
+
+  /// 停滞本一覧: 指定本のエントリ行
+  static Key stagnantEntry(String bookId) => Key('stagnant_entry_$bookId');
+
+  /// 停滞本一覧: 指定本の経過日数表示
+  static Key stagnantDays(String bookId) => Key('stagnant_days_$bookId');
+
+  /// 停滞本一覧: 停滞理由の絞り込みチップ（enum名を指定）
+  static Key stagnantReasonChip(String reason) => Key('stagnant_reason_chip_$reason');
+
+  /// 停滞本一覧: 閾値日数の選択チップ
+  static Key stagnantMinChip(int days) => Key('stagnant_min_chip_$days');
+
+  /// 停滞本一覧: 検索欄
+  static const Key stagnantSearchField = Key('stagnant_search_field');
+
+  /// 停滞本一覧: 検索クリアボタン
+  static const Key stagnantSearchClear = Key('stagnant_search_clear');
+
+  /// 停滞本一覧: 空状態
+  static const Key stagnantEmpty = Key('stagnant_empty');
 }

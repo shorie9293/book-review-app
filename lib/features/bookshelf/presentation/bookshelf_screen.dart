@@ -9,6 +9,7 @@ import 'package:book_review_app/features/bookshelf/domain/reading_status_service
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
+import 'package:book_review_app/features/bookshelf/presentation/stagnant_books_screen.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
 import 'package:book_review_app/features/stats/presentation/stats_screen.dart';
@@ -161,6 +162,14 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     return '$timestamp-$random-${_books.length + 1}';
   }
 
+  void _openStagnantBooks() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StagnantBooksScreen(books: List.of(_books)),
+      ),
+    );
+  }
+
   Future<void> _openBarcodeScanner() async {
     final service = widget.searchService ?? _searchService;
     final scannedBook = await Navigator.push<Book>(
@@ -266,6 +275,16 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 );
               },
               tooltip: '読書統計',
+            ),
+          ),
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_stagnant_books',
+            label: '停滞している本を開く',
+            child: IconButton(
+              key: const Key('stagnant_books_button'),
+              icon: const Icon(Icons.hourglass_bottom),
+              onPressed: _openStagnantBooks,
+              tooltip: '停滞している本',
             ),
           ),
           SemanticHelper.interactive(
