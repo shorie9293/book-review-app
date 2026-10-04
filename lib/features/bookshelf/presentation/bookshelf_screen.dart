@@ -6,6 +6,8 @@ import 'package:book_review_app/features/bookshelf/data/book_search_service.dart
 import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
 import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
+import 'package:book_review_app/features/backup/data/backup_repository.dart';
+import 'package:book_review_app/features/backup/presentation/backup_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
@@ -232,6 +234,21 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  /// エクスポート／バックアップ画面を開く。
+  Future<void> _openBackup() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BackupScreen(
+          repository: HiveBackupRepository(
+            bookRepository: widget.repository,
+            reviewRepository: widget.reviewRepository!,
+            noteRepository: widget.noteRepository!,
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 文字サイズ設定画面を開く。
   Future<void> _openTextScaleSettings() async {
     final onScaleChanged = widget.onScaleChanged;
@@ -349,6 +366,17 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 icon: const Icon(Icons.star_outline),
                 onPressed: _openFavoriteNotes,
                 tooltip: 'お気に入りの引用',
+              ),
+            ),
+          if (widget.reviewRepository != null && widget.noteRepository != null)
+            SemanticHelper.interactive(
+              testId: 'bookshelf_btn_backup',
+              label: 'エクスポート/バックアップを開く',
+              child: IconButton(
+                key: const Key('backup_button'),
+                icon: const Icon(Icons.upload_file),
+                onPressed: _openBackup,
+                tooltip: 'エクスポート/バックアップ',
               ),
             ),
           if (widget.onScaleChanged != null)
