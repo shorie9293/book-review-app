@@ -70,4 +70,43 @@ class AppKeys {
 
   /// 停滞本一覧: 空状態
   static const Key stagnantEmpty = Key('stagnant_empty');
+
+  /// チュートリアル画面のルート
+  static const Key tutorialScreen = Key('screen_tutorial');
+
+  /// チュートリアル: 次へ/はじめるボタン
+  static const Key tutorialNext = Key('tutorial_next_button');
+
+  /// チュートリアル: スキップボタン
+  static const Key tutorialSkip = Key('tutorial_skip_button');
+
+  /// チュートリアル: ページインジケータ
+  static const Key tutorialIndicator = Key('tutorial_page_indicator');
+
+  /// チュートリアル: 指定ページの本文
+  static Key tutorialPage(String keyName) => Key(keyName);
+
+  /// 読書時間画面への導線（書庫 AppBar）
+  static const Key readingTimerButton = Key('reading_timer_button');
+
+  /// 読書時間: 開始ボタン
+  static const Key readingStart = Key('reading_start_button');
+
+  /// 読書時間: 停止/保存ボタン
+  static const Key readingStop = Key('reading_stop_button');
+
+  /// 読書時間: 経過表示
+  static const Key readingElapsed = Key('reading_elapsed_label');
+
+  /// 読書時間: 総読書時間の統計ラベル
+  static const Key readingTotalLabel = Key('reading_total_label');
+
+  /// 読書時間: 手動追加ボタン
+  static const Key readingAddButton = Key('reading_add_button');
+
+  /// 読書時間: セッション行
+  static Key readingSessionRow(String id) => Key('reading_session_$id');
+
+  /// 読書時間: 空状態
+  static const Key readingEmpty = Key('reading_empty');
 }

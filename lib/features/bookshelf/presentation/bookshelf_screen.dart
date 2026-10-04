@@ -17,6 +17,8 @@ import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/reading_queue_repository.dart';
 import 'package:book_review_app/features/queue/presentation/reading_queue_screen.dart';
 import 'package:book_review_app/features/notes/presentation/favorite_notes_screen.dart';
+import 'package:book_review_app/features/reading/data/reading_session_repository.dart';
+import 'package:book_review_app/features/reading/presentation/reading_session_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
@@ -34,6 +36,9 @@ class BookshelfScreen extends StatefulWidget {
 
   /// 「次に読む」キューのリポジトリ（未指定なら導線を表示しない）
   final ReadingQueueRepository? queueRepository;
+
+  /// 読書時間画面のリポジトリ（未指定なら Hive 実装を使う・試練用差し替え口）
+  final ReadingSessionRepository? readingSessionRepositoryOverride;
 
   /// 現在の文字サイズ倍率（設定画面へ渡す）
   final double textScale;
@@ -55,6 +60,7 @@ class BookshelfScreen extends StatefulWidget {
     this.reviewRepository,
     this.noteRepository,
     this.queueRepository,
+    this.readingSessionRepositoryOverride,
     this.textScale = 1.0,
     this.onScaleChanged,
     this.themeMode = ThemeModeSetting.system,
@@ -367,6 +373,21 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 tooltip: 'テーマ設定',
               ),
             ),
+          IconButton(
+            key: AppKeys.readingTimerButton,
+            icon: const Icon(Icons.timer_outlined),
+            tooltip: '読書時間',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ReadingSessionScreen(
+                  repository:
+                      widget.readingSessionRepositoryOverride ??
+                          HiveReadingSessionRepository(),
+                  now: DateTime.now,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
       body: Column(
