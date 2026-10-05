@@ -21,6 +21,7 @@ import 'package:book_review_app/features/queue/presentation/reading_queue_screen
 import 'package:book_review_app/features/notes/presentation/favorite_notes_screen.dart';
 import 'package:book_review_app/features/reading/data/reading_session_repository.dart';
 import 'package:book_review_app/features/reading/presentation/reading_session_screen.dart';
+import 'package:book_review_app/features/recommendation/presentation/recommendation_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
@@ -178,6 +179,15 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  /// 「読書の推薦」画面を開く。
+  void _openRecommendations() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RecommendationScreen(books: List.of(_books)),
+      ),
+    );
+  }
+
   Future<void> _openBarcodeScanner() async {
     final service = widget.searchService ?? _searchService;
     final scannedBook = await Navigator.push<Book>(
@@ -298,6 +308,16 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 );
               },
               tooltip: '読書統計',
+            ),
+          ),
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_recommendation',
+            label: '読書の推薦を開く',
+            child: IconButton(
+              key: const Key('recommendation_button'),
+              icon: const Icon(Icons.auto_awesome),
+              onPressed: _openRecommendations,
+              tooltip: '読書の推薦',
             ),
           ),
           SemanticHelper.interactive(

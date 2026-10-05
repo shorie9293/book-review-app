@@ -109,4 +109,17 @@ class AppKeys {
 
   /// 読書時間: 空状態
   static const Key readingEmpty = Key('reading_empty');
+
+  /// 読書の推薦画面（Scaffold）
+  static const Key recommendationScreen = Key('screen_recommendation');
+
+  /// 読書の推薦: ローディング状態
+  static const Key recommendationLoading = Key('recommendation_loading');
+
+  /// 読書の推薦: 空状態
+  static const Key recommendationEmpty = Key('recommendation_empty');
+
+  /// 読書の推薦: 指定本のカード
+  static Key recommendationCard(String bookId) =>
+      Key('recommendation_card_$bookId');
 }
