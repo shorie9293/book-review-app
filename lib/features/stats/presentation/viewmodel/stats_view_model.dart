@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/features/stats/domain/reading_stats_service.dart';
+import 'package:book_review_app/features/stats/domain/year_comparison.dart';
 
 /// 統計算出に必要なデータ源の抽象インターフェース。
 ///
@@ -15,11 +16,20 @@ abstract class StatsDataSource {
 /// 読書統計画面の状態を管理する ViewModel。
 class StatsViewModel extends ChangeNotifier {
   ReadingStats? _stats;
+  YearComparison? _comparison;
   bool _isLoading = true;
   String? _error;
 
+  /// 固定日時注入（テストの決定論化用）。未指定なら実時計。
+  final DateTime Function() _now;
+
+  StatsViewModel({DateTime Function()? now}) : _now = now ?? DateTime.now;
+
   /// 算出済みの統計（読み込み完了まで null）
   ReadingStats? get stats => _stats;
+
+  /// 前年比（読み込み完了まで null）
+  YearComparison? get comparison => _comparison;
 
   /// 読み込み中か
   bool get isLoading => _isLoading;
@@ -35,9 +45,19 @@ class StatsViewModel extends ChangeNotifier {
     try {
       final books = await source.getBooks();
       final reviews = await source.getAllReviews();
-      _stats = ReadingStatsService.compute(books: books, reviews: reviews);
+      _stats = ReadingStatsService.compute(
+        books: books,
+        reviews: reviews,
+        now: _now(),
+      );
+      _comparison = ReadingStatsService.compareYears(
+        books: books,
+        reviews: reviews,
+        now: _now(),
+      );
     } catch (e) {
       _stats = null;
+      _comparison = null;
       _error = e.toString();
     }
     _isLoading = false;

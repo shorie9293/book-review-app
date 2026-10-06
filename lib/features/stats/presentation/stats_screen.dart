@@ -5,6 +5,7 @@ import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/challenge/data/hive_challenge_repository.dart';
 import 'package:book_review_app/features/stats/domain/reading_stats_service.dart';
+import 'package:book_review_app/features/stats/domain/year_comparison.dart';
 import 'package:book_review_app/features/stats/presentation/finish_forecast_screen.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/finish_forecast_view_model.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/stats_view_model.dart';
@@ -46,10 +47,14 @@ class StatsScreen extends StatefulWidget {
   /// 読了予測画面に渡すデータソース（テスト注入用）。
   final FinishForecastDataSource? forecastDataSource;
 
+  /// 統計基準日（テストの決定論化用）。未指定なら実時計。
+  final DateTime Function()? now;
+
   const StatsScreen({
     super.key,
     this.dataSource,
     this.forecastDataSource,
+    this.now,
   });
 
   @override
@@ -57,7 +62,7 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  final StatsViewModel _viewModel = StatsViewModel();
+  late final StatsViewModel _viewModel = StatsViewModel(now: widget.now);
   StatsDataSource? _source;
 
   @override
@@ -119,6 +124,7 @@ class _StatsScreenState extends State<StatsScreen> {
     }
 
     final stats = _viewModel.stats;
+    final comparison = _viewModel.comparison;
     if (stats == null || stats.totalFinished == 0) {
       return const Center(child: Text('まだ読了データがありません。'));
     }
@@ -145,7 +151,68 @@ class _StatsScreenState extends State<StatsScreen> {
             label: '著者別の読了分布',
             child: _buildAuthorCard(context, stats),
           ),
+          if (comparison != null) ...[
+            const SizedBox(height: 16),
+            SemanticHelper.container(
+              testId: 'stats_year_comparison',
+              label: '前年比: ${comparison.headLabel}',
+              child: _buildComparisonCard(context, comparison),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildComparisonCard(
+    BuildContext context,
+    YearComparison comparison,
+  ) {
+    return Card(
+      key: AppKeys.statsYearComparison,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '📈 前年比 ${comparison.headLabel}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            if (!comparison.hasPreviousData)
+              const Text('前年のデータがありません')
+            else ...[
+              Row(
+                children: [
+                  const Expanded(child: Text('読了冊数')),
+                  Text(
+                    comparison.finishedLabel,
+                    key: AppKeys.statsComparisonFinished,
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const Expanded(child: Text('読了ページ数')),
+                  Text(
+                    comparison.pagesLabel,
+                    key: AppKeys.statsComparisonPages,
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const Expanded(child: Text('著者数')),
+                  Text(
+                    comparison.authorLabel,
+                    key: AppKeys.statsComparisonAuthors,
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

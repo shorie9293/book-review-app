@@ -138,4 +138,16 @@ class AppKeys {
 
   /// 読了予測画面への導線（統計 AppBar アクション）
   static const Key finishForecastOpenButton = Key('finish_forecast_open_button');
+
+  /// 統計: 前年比カード
+  static const Key statsYearComparison = Key('stats_year_comparison');
+
+  /// 統計: 前年比 読了冊数ラベル
+  static const Key statsComparisonFinished = Key('stats_comparison_finished');
+
+  /// 統計: 前年比 ページ数ラベル
+  static const Key statsComparisonPages = Key('stats_comparison_pages');
+
+  /// 統計: 前年比 著者数ラベル
+  static const Key statsComparisonAuthors = Key('stats_comparison_authors');
 }

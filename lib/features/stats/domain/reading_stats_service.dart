@@ -1,6 +1,8 @@
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 
+import 'year_comparison.dart';
+
 /// 年間読書統計の不変モデル。
 ///
 /// 月別読了冊数・著者別読了分布・平均評価・読了ペースを保持する。
@@ -23,6 +25,9 @@ class ReadingStats {
   /// 読了ペース（経過月ベースの月平均読了冊数）
   final double pacePerMonth;
 
+  /// 今年読了した書籍の総ページ数（pageCount 不明は0として合算）
+  final int totalPages;
+
   const ReadingStats({
     required this.year,
     required this.totalFinished,
@@ -30,7 +35,11 @@ class ReadingStats {
     required this.authorCounts,
     required this.averageRating,
     required this.pacePerMonth,
+    this.totalPages = 0,
   });
+
+  /// 読了書籍に登場した著者の人数
+  int get authorCount => authorCounts.length;
 
   /// 最も多く読了した著者（同数の先頭・空なら null）
   String? get topAuthor =>
@@ -61,6 +70,7 @@ class ReadingStatsService {
     // 読了日の解決: finishedAt を優先し、無ければ今年の最初のレビュー日。
     final finishedThisYear = <DateTime>[];
     final authorsThisYear = <String, int>{};
+    var totalPages = 0;
 
     // 書籍ID -> 今年の最初のレビュー作成日（レビューは後で照合するため収集）
     final firstReviewByBook = <String, DateTime>{};
@@ -92,6 +102,7 @@ class ReadingStatsService {
       if (finishedAt.isAfter(ref)) continue;
 
       finishedThisYear.add(finishedAt);
+      totalPages += book.pageCount ?? 0;
       final author = book.author.trim().isEmpty ? '（著者不明）' : book.author;
       authorsThisYear[author] = (authorsThisYear[author] ?? 0) + 1;
     }
@@ -121,6 +132,26 @@ class ReadingStatsService {
       authorCounts: Map.unmodifiable(Map.fromEntries(authorEntries)),
       averageRating: averageRating,
       pacePerMonth: pace,
+      totalPages: totalPages,
     );
+  }
+
+  /// 対象年と前年の読書統計を比較する。
+  ///
+  /// 前年は `DateTime(ref.year - 1, 12, 31, 23, 59, 59)` を基準日として算出する
+  /// ため、前年12/31当日の読了も取りこぼさず1年分の全データが集計対象になる。
+  static YearComparison compareYears({
+    required List<Book> books,
+    required List<Review> reviews,
+    DateTime? now,
+  }) {
+    final ref = now ?? DateTime.now();
+    final current = compute(books: books, reviews: reviews, now: ref);
+    final previous = compute(
+      books: books,
+      reviews: reviews,
+      now: DateTime(ref.year - 1, 12, 31, 23, 59, 59),
+    );
+    return YearComparison(current: current, previous: previous);
   }
 }
