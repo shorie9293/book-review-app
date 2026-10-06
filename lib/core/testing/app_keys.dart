@@ -122,4 +122,20 @@ class AppKeys {
   /// 読書の推薦: 指定本のカード
   static Key recommendationCard(String bookId) =>
       Key('recommendation_card_$bookId');
+
+  /// 読了予測画面（Scaffold）
+  static const Key finishForecastScreen = Key('screen_finish_forecast');
+
+  /// 読了予測: ローディング状態
+  static const Key finishForecastLoading = Key('finish_forecast_loading');
+
+  /// 読了予測: 空状態
+  static const Key finishForecastEmpty = Key('finish_forecast_empty');
+
+  /// 読了予測: 指定本のカード
+  static Key finishForecastCard(String bookId) =>
+      Key('finish_forecast_card_$bookId');
+
+  /// 読了予測画面への導線（統計 AppBar アクション）
+  static const Key finishForecastOpenButton = Key('finish_forecast_open_button');
 }

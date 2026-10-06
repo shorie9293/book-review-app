@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/challenge/data/hive_challenge_repository.dart';
 import 'package:book_review_app/features/stats/domain/reading_stats_service.dart';
+import 'package:book_review_app/features/stats/presentation/finish_forecast_screen.dart';
+import 'package:book_review_app/features/stats/presentation/viewmodel/finish_forecast_view_model.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/stats_view_model.dart';
-import 'package:takamagahara_ui/takamagahara_ui.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 /// 既存 Hive リポジトリ2件を合成した [StatsDataSource] 実装。
 class _HiveStatsDataSource implements StatsDataSource {
@@ -40,7 +43,14 @@ class _HiveStatsDataSource implements StatsDataSource {
 class StatsScreen extends StatefulWidget {
   final StatsDataSource? dataSource;
 
-  const StatsScreen({super.key, this.dataSource});
+  /// 読了予測画面に渡すデータソース（テスト注入用）。
+  final FinishForecastDataSource? forecastDataSource;
+
+  const StatsScreen({
+    super.key,
+    this.dataSource,
+    this.forecastDataSource,
+  });
 
   @override
   State<StatsScreen> createState() => _StatsScreenState();
@@ -77,7 +87,25 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: const Key('screen_stats'),
-      appBar: AppBar(title: const Text('読書統計')),
+      appBar: AppBar(
+        title: const Text('読書統計'),
+        actions: [
+          IconButton(
+            key: AppKeys.finishForecastOpenButton,
+            icon: const Icon(Icons.insights),
+            tooltip: '読了予測',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => FinishForecastScreen(
+                    dataSource: widget.forecastDataSource,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: _viewModel.isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildBody(context),
