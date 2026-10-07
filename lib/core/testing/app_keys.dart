@@ -150,4 +150,23 @@ class AppKeys {
 
   /// 統計: 前年比 著者数ラベル
   static const Key statsComparisonAuthors = Key('stats_comparison_authors');
+
+  /// 読書習慣ヒートマップ: 全体Container
+  static const Key readingHabitHeatmap = Key('reading_habit_heatmap');
+
+  /// 読書習慣ヒートマップ: 集計行（busiestラベル・合計）
+  static const Key readingHabitBusiest = Key('reading_habit_busiest');
+
+  /// 読書習慣ヒートマップ: 空メッセージ
+  static const Key readingHabitEmpty = Key('reading_habit_empty');
+
+  /// 読書習慣ヒートマップ: グリッド
+  static const Key readingHabitGrid = Key('reading_habit_grid');
+
+  /// 読書習慣ヒートマップ: 各セル（weekday: 1..7, slot: 0..5）
+  static Key readingHabitCell(int weekday, int slot) =>
+      Key('reading_habit_cell_${weekday}_$slot');
+
+  /// 読書習慣ヒートマップ: 凡例
+  static const Key readingHabitLegend = Key('reading_habit_legend');
 }

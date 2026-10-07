@@ -5,6 +5,7 @@ import 'package:book_review_app/features/reading/data/reading_session_repository
 import 'package:book_review_app/features/reading/domain/reading_session.dart';
 import 'package:book_review_app/features/reading/domain/reading_session_service.dart';
 import 'package:book_review_app/features/reading/domain/reading_stats.dart';
+import 'package:book_review_app/features/reading/presentation/widgets/reading_habit_heatmap.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
@@ -270,6 +271,8 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
         _buildDailySection(daily),
         const SizedBox(height: 16),
         _buildHistorySection(sorted),
+        const SizedBox(height: 16),
+        ReadingHabitHeatmap(sessions: sorted),
       ],
     );
   }
