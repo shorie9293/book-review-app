@@ -22,6 +22,7 @@ import 'package:book_review_app/features/notes/presentation/favorite_notes_scree
 import 'package:book_review_app/features/reading/data/reading_session_repository.dart';
 import 'package:book_review_app/features/reading/presentation/reading_session_screen.dart';
 import 'package:book_review_app/features/recommendation/presentation/recommendation_screen.dart';
+import 'package:book_review_app/features/reminder/presentation/reading_reminder_settings_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
@@ -421,6 +422,20 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 tooltip: 'テーマ設定',
               ),
             ),
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_reading_reminder',
+            label: '読書リマインダーの設定を開く',
+            child: IconButton(
+              key: AppKeys.readingReminderEntry,
+              icon: const Icon(Icons.notifications_active),
+              tooltip: '読書リマインダー',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const ReadingReminderSettingsScreen(),
+                ),
+              ),
+            ),
+          ),
           IconButton(
             key: AppKeys.readingTimerButton,
             icon: const Icon(Icons.timer_outlined),

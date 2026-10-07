@@ -169,4 +169,34 @@ class AppKeys {
 
   /// 読書習慣ヒートマップ: 凡例
   static const Key readingHabitLegend = Key('reading_habit_legend');
+
+  /// 読書リマインダー設定画面（Scaffold）
+  static const Key readingReminderScreen = Key('reading_reminder_screen');
+
+  /// 読書リマインダー: 有効スイッチ
+  static const Key readingReminderEnabledSwitch =
+      Key('reading_reminder_enabled_switch');
+
+  /// 読書リマインダー: 通知時刻ボタン
+  static const Key readingReminderTimeButton =
+      Key('reading_reminder_time_button');
+
+  /// 読書リマインダー: 保存ボタン
+  static const Key readingReminderSaveButton =
+      Key('reading_reminder_save_button');
+
+  /// 読書リマインダー: テスト通知ボタン
+  static const Key readingReminderTestButton =
+      Key('reading_reminder_test_button');
+
+  /// 読書リマインダー: 次回通知ラベル
+  static const Key readingReminderNextLabel =
+      Key('reading_reminder_next_label');
+
+  /// 読書リマインダー画面への導線（本棚 AppBar）
+  static const Key readingReminderEntry = Key('reading_reminder_entry');
+
+  /// 読書リマインダー: 曜日選択チップ（weekday: 1..7）
+  static Key readingReminderWeekdayChip(int weekday) =>
+      Key('reading_reminder_weekday_$weekday');
 }
