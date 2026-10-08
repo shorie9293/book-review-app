@@ -199,4 +199,30 @@ class AppKeys {
   /// 読書リマインダー: 曜日選択チップ（weekday: 1..7）
   static Key readingReminderWeekdayChip(int weekday) =>
       Key('reading_reminder_weekday_$weekday');
+
+  /// 読書統計グラフ画面（Scaffold）
+  static const Key readingTrendScreen = Key('reading_trend_screen');
+
+  /// 読書統計グラフ画面への導線（統計 AppBar アクション）
+  static const Key readingTrendEntry = Key('reading_trend_entry');
+
+  /// 読書統計グラフ: ローディング状態
+  static const Key readingTrendLoading = Key('reading_trend_loading');
+
+  /// 読書統計グラフ: 空状態
+  static const Key readingTrendEmpty = Key('reading_trend_empty');
+
+  /// 読書統計グラフ: サマリーカード
+  static const Key readingTrendSummary = Key('reading_trend_summary');
+
+  /// 読書統計グラフ: 月別読了冊数 棒グラフ
+  static const Key readingTrendFinishedChart =
+      Key('reading_trend_finished_chart');
+
+  /// 読書統計グラフ: 月別読書時間 折れ線グラフ
+  static const Key readingTrendMinutesChart =
+      Key('reading_trend_minutes_chart');
+
+  /// 読書統計グラフ: ジャンル分布 円グラフ
+  static const Key readingTrendGenreChart = Key('reading_trend_genre_chart');
 }

@@ -7,6 +7,7 @@ import 'package:book_review_app/features/challenge/data/hive_challenge_repositor
 import 'package:book_review_app/features/stats/domain/reading_stats_service.dart';
 import 'package:book_review_app/features/stats/domain/year_comparison.dart';
 import 'package:book_review_app/features/stats/presentation/finish_forecast_screen.dart';
+import 'package:book_review_app/features/stats/presentation/reading_trend_screen.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/finish_forecast_view_model.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/stats_view_model.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
@@ -47,6 +48,9 @@ class StatsScreen extends StatefulWidget {
   /// 読了予測画面に渡すデータソース（テスト注入用）。
   final FinishForecastDataSource? forecastDataSource;
 
+  /// 読書統計グラフ画面に渡すデータソース（テスト注入用）。
+  final TrendDataSource? trendDataSource;
+
   /// 統計基準日（テストの決定論化用）。未指定なら実時計。
   final DateTime Function()? now;
 
@@ -54,6 +58,7 @@ class StatsScreen extends StatefulWidget {
     super.key,
     this.dataSource,
     this.forecastDataSource,
+    this.trendDataSource,
     this.now,
   });
 
@@ -104,6 +109,21 @@ class _StatsScreenState extends State<StatsScreen> {
                 MaterialPageRoute<void>(
                   builder: (_) => FinishForecastScreen(
                     dataSource: widget.forecastDataSource,
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            key: AppKeys.readingTrendEntry,
+            icon: const Icon(Icons.auto_graph),
+            tooltip: '読書グラフ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ReadingTrendScreen(
+                    dataSource: widget.trendDataSource,
+                    now: widget.now,
                   ),
                 ),
               );
