@@ -13,6 +13,7 @@ import 'package:book_review_app/features/bookshelf/presentation/book_detail_scre
 import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
 import 'package:book_review_app/features/bookshelf/presentation/stagnant_books_screen.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
+import 'package:book_review_app/features/goals/presentation/daily_reading_goal_screen.dart';
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
 import 'package:book_review_app/features/stats/presentation/stats_screen.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
@@ -432,6 +433,20 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const ReadingReminderSettingsScreen(),
+                ),
+              ),
+            ),
+          ),
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_daily_goal',
+            label: '読書の日次目標を開く',
+            child: IconButton(
+              key: AppKeys.dailyGoalEntry,
+              icon: const Icon(Icons.flag_outlined),
+              tooltip: '読書の日次目標',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const DailyReadingGoalScreen(),
                 ),
               ),
             ),

@@ -225,4 +225,38 @@ class AppKeys {
 
   /// 読書統計グラフ: ジャンル分布 円グラフ
   static const Key readingTrendGenreChart = Key('reading_trend_genre_chart');
+
+  /// 読書の日次目標画面への導線（本棚 AppBar）
+  static const Key dailyGoalEntry = Key('daily_goal_entry');
+
+  /// 読書の日次目標画面（Scaffold）
+  static const Key dailyGoalScreen = Key('daily_goal_screen');
+
+  /// 読書の日次目標: 今日のカード
+  static const Key dailyGoalTodayCard = Key('daily_goal_today_card');
+
+  /// 読書の日次目標: 進捗バー
+  static const Key dailyGoalProgressBar = Key('daily_goal_progress_bar');
+
+  /// 読書の日次目標: 連続達成ラベル
+  static const Key dailyGoalStreakLabel = Key('daily_goal_streak_label');
+
+  /// 読書の日次目標: 目標未設定表示
+  static const Key dailyGoalEmpty = Key('daily_goal_empty');
+
+  /// 読書の日次目標: 分数入力欄
+  static const Key dailyGoalMinutesField = Key('daily_goal_minutes_field');
+
+  /// 読書の日次目標: 保存ボタン
+  static const Key dailyGoalSaveButton = Key('daily_goal_save_button');
+
+  /// 読書の日次目標: 目標解除ボタン
+  static const Key dailyGoalClearButton = Key('daily_goal_clear_button');
+
+  /// 読書の日次目標: プリセットチップ（分を指定）
+  static Key dailyGoalPresetChip(int minutes) =>
+      Key('daily_goal_preset_$minutes');
+
+  /// 読書の日次目標: 直近7日の各セル（'YYYY-MM-DD'を指定）
+  static Key dailyGoalDayCell(String date) => Key('daily_goal_day_$date');
 }
