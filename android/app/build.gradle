@@ -11,7 +11,8 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
+        // Groovy DSL では Kotlin DSL の isCoreLibraryDesugaringEnabled は解釈されない（election-game と同一禍津）
+        coreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
