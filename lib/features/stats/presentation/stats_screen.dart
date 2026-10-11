@@ -8,6 +8,9 @@ import 'package:book_review_app/features/stats/domain/reading_stats_service.dart
 import 'package:book_review_app/features/stats/domain/year_comparison.dart';
 import 'package:book_review_app/features/stats/presentation/finish_forecast_screen.dart';
 import 'package:book_review_app/features/stats/presentation/reading_trend_screen.dart';
+import 'package:book_review_app/features/share/presentation/share_card_capture.dart';
+import 'package:book_review_app/features/share/presentation/share_card_exporter.dart';
+import 'package:book_review_app/features/share/presentation/share_card_screen.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/finish_forecast_view_model.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/stats_view_model.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
@@ -51,7 +54,13 @@ class StatsScreen extends StatefulWidget {
   /// 読書統計グラフ画面に渡すデータソース（テスト注入用）。
   final TrendDataSource? trendDataSource;
 
-  /// 統計基準日（テストの決定論化用）。未指定なら実時計。
+  /// シェアカード画面に渡すキャプチャ（テスト注入用）。nullなら本番実装。
+  final ShareCardCapture? capture;
+
+  /// シェアカード画面に渡すエクスポーター（テスト注入用）。nullなら本番実装。
+  final ShareCardExporter? exporter;
+
+  /// 読書統計の基準日（テストの決定論化用）。未指定なら実時計。
   final DateTime Function()? now;
 
   const StatsScreen({
@@ -59,6 +68,8 @@ class StatsScreen extends StatefulWidget {
     this.dataSource,
     this.forecastDataSource,
     this.trendDataSource,
+    this.capture,
+    this.exporter,
     this.now,
   });
 
@@ -124,6 +135,24 @@ class _StatsScreenState extends State<StatsScreen> {
                   builder: (_) => ReadingTrendScreen(
                     dataSource: widget.trendDataSource,
                     now: widget.now,
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            key: AppKeys.statsShareCardEntry,
+            icon: const Icon(Icons.ios_share),
+            tooltip: '読書シェアカード',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ShareCardScreen(
+                    dataSource: widget.dataSource,
+                    now: widget.now,
+                    capture:
+                        widget.capture ?? const RepaintBoundaryCapture(),
+                    exporter: widget.exporter ?? const SharePlusExporter(),
                   ),
                 ),
               );

@@ -259,4 +259,19 @@ class AppKeys {
 
   /// 読書の日次目標: 直近7日の各セル（'YYYY-MM-DD'を指定）
   static Key dailyGoalDayCell(String date) => Key('daily_goal_day_$date');
+
+  /// 読書シェアカード画面（Scaffold）
+  static const Key shareCardScreen = Key('screen_share_card');
+
+  /// 読書シェアカード: プレビューカード
+  static const Key shareCardPreview = Key('share_card_preview');
+
+  /// 読書シェアカード: テキスト共有ボタン
+  static const Key shareCardTextShareButton = Key('share_card_text_share');
+
+  /// 読書シェアカード: 画像共有ボタン
+  static const Key shareCardImageShareButton = Key('share_card_image_share');
+
+  /// 読書シェアカード画面への導線（統計 AppBar アクション）
+  static const Key statsShareCardEntry = Key('stats_share_card_entry');
 }
