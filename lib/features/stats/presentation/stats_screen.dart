@@ -4,6 +4,7 @@ import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/challenge/data/hive_challenge_repository.dart';
+import 'package:book_review_app/features/report/presentation/period_report_screen.dart';
 import 'package:book_review_app/features/stats/domain/reading_stats_service.dart';
 import 'package:book_review_app/features/stats/domain/year_comparison.dart';
 import 'package:book_review_app/features/stats/presentation/finish_forecast_screen.dart';
@@ -54,6 +55,9 @@ class StatsScreen extends StatefulWidget {
   /// 読書統計グラフ画面に渡すデータソース（テスト注入用）。
   final TrendDataSource? trendDataSource;
 
+  /// 期間レポート画面に渡すデータソース（テスト注入用）。
+  final PeriodReportDataSource? periodReportDataSource;
+
   /// シェアカード画面に渡すキャプチャ（テスト注入用）。nullなら本番実装。
   final ShareCardCapture? capture;
 
@@ -68,6 +72,7 @@ class StatsScreen extends StatefulWidget {
     this.dataSource,
     this.forecastDataSource,
     this.trendDataSource,
+    this.periodReportDataSource,
     this.capture,
     this.exporter,
     this.now,
@@ -153,6 +158,21 @@ class _StatsScreenState extends State<StatsScreen> {
                     capture:
                         widget.capture ?? const RepaintBoundaryCapture(),
                     exporter: widget.exporter ?? const SharePlusExporter(),
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            key: AppKeys.periodReportEntry,
+            icon: const Icon(Icons.article_outlined),
+            tooltip: '期間レポート',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PeriodReportScreen(
+                    dataSource: widget.periodReportDataSource,
+                    now: widget.now,
                   ),
                 ),
               );

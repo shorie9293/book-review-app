@@ -274,4 +274,43 @@ class AppKeys {
 
   /// 読書シェアカード画面への導線（統計 AppBar アクション）
   static const Key statsShareCardEntry = Key('stats_share_card_entry');
+
+  /// 期間レポート画面への導線（統計 AppBar アクション）
+  static const Key periodReportEntry = Key('period_report_entry');
+
+  /// 期間レポート画面（Scaffold）
+  static const Key periodReportScreen = Key('screen_period_report');
+
+  /// 期間レポート: ローディング状態
+  static const Key periodReportLoading = Key('period_report_loading');
+
+  /// 期間レポート: 週次トグル
+  static const Key periodReportRangeWeek = Key('period_report_range_week');
+
+  /// 期間レポート: 月次トグル
+  static const Key periodReportRangeMonth = Key('period_report_range_month');
+
+  /// 期間レポート: 前の期間ボタン
+  static const Key periodReportPrevButton = Key('period_report_prev_button');
+
+  /// 期間レポート: 次の期間ボタン
+  static const Key periodReportNextButton = Key('period_report_next_button');
+
+  /// 期間レポート: 期間ラベル
+  static const Key periodReportPeriodLabel = Key('period_report_period_label');
+
+  /// 期間レポート: 読了冊数
+  static const Key periodReportFinishedCount =
+      Key('period_report_finished_count');
+
+  /// 期間レポート: 総読書時間
+  static const Key periodReportTotalMinutes =
+      Key('period_report_total_minutes');
+
+  /// 期間レポート: 空状態
+  static const Key periodReportEmpty = Key('period_report_empty');
+
+  /// 期間レポート: お気に入りレビューの行（index を指定）
+  static Key periodReportFavoriteReview(int index) =>
+      Key('period_report_favorite_review_$index');
 }
