@@ -14,6 +14,27 @@ class AppKeys {
   static Key themeModeOption(String storageKey) =>
       Key('theme_mode_option_$storageKey');
 
+  /// アプリロック設定画面（Scaffold）
+  static const Key appLockScreen = Key('app_lock_screen');
+
+  /// アプリロック設定画面への導線（本棚 AppBar アクション）
+  static const Key appLockEntry = Key('app_lock_entry');
+
+  /// アプリロックゲート: パスコード入力欄
+  static const Key appLockGateField = Key('app_lock_gate_field');
+
+  /// アプリロック: 新しいパスコード入力欄
+  static const Key appLockPasscodeField = Key('app_lock_passcode_field');
+
+  /// アプリロック: 確認用パスコード入力欄
+  static const Key appLockConfirmField = Key('app_lock_confirm_field');
+
+  /// アプリロック: 有効化ボタン
+  static const Key appLockEnableButton = Key('app_lock_enable_button');
+
+  /// アプリロック: 無効化ボタン
+  static const Key appLockDisableButton = Key('app_lock_disable_button');
+
   /// 蔵書詳細: 進行ページ更新の導線（読書中のみ表示）
   static const Key bookProgressEdit = Key('book_progress_edit');
 
@@ -32,10 +53,10 @@ class AppKeys {
   /// 蔵書詳細: ジャンル追加ダイアログ
   static const Key genreDialog = Key('genre_dialog');
 
-  /// 蔵書詳細: ジャンル入力欄（ダイアログ内）
+  /// 蔵書詳細: ジャンル入力欄
   static const Key genreInput = Key('genre_input');
 
-  /// 蔵書詳細: ジャンル保存ボタン（ダイアログ内）
+  /// 蔵書詳細: ジャンル保存ボタン
   static const Key genreSave = Key('genre_save');
 
   /// 蔵書詳細: 指定ジャンルのチップ表示

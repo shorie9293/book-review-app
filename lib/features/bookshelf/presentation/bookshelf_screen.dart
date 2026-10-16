@@ -26,6 +26,7 @@ import 'package:book_review_app/features/recommendation/presentation/recommendat
 import 'package:book_review_app/features/reminder/presentation/reading_reminder_settings_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
+import 'package:book_review_app/core/infrastructure/app_lock_settings_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
@@ -289,6 +290,15 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  /// アプリロック設定画面を開く。
+  Future<void> _openAppLockSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const AppLockSettingsScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -423,6 +433,16 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 tooltip: 'テーマ設定',
               ),
             ),
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_app_lock',
+            label: 'アプリロック設定を開く',
+            child: IconButton(
+              key: AppKeys.appLockEntry,
+              icon: const Icon(Icons.lock_outline),
+              tooltip: 'アプリロック',
+              onPressed: _openAppLockSettings,
+            ),
+          ),
           SemanticHelper.interactive(
             testId: 'bookshelf_btn_reading_reminder',
             label: '読書リマインダーの設定を開く',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:book_review_app/core/infrastructure/app_lock_gate.dart';
 import 'package:book_review_app/core/theme/app_theme.dart';
 import 'package:book_review_app/core/theme/theme_mode_repository.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
@@ -81,14 +82,16 @@ class _MyAppState extends State<MyApp> {
         ),
         child: child ?? const SizedBox.shrink(),
       ),
-      home: ErrorBoundary(
-        child: _TutorialGate(
-          repository: const HiveTutorialRepository(),
-          child: MainScreen(
-            textScale: _textScale,
-            onScaleChanged: _changeTextScale,
-            themeMode: _themeMode,
-            onThemeModeChanged: _changeThemeMode,
+      home: AppLockGate(
+        unlockedBuilder: (context) => ErrorBoundary(
+          child: _TutorialGate(
+            repository: const HiveTutorialRepository(),
+            child: MainScreen(
+              textScale: _textScale,
+              onScaleChanged: _changeTextScale,
+              themeMode: _themeMode,
+              onThemeModeChanged: _changeThemeMode,
+            ),
           ),
         ),
       ),
