@@ -334,4 +334,28 @@ class AppKeys {
   /// 期間レポート: お気に入りレビューの行（index を指定）
   static Key periodReportFavoriteReview(int index) =>
       Key('period_report_favorite_review_$index');
+
+  /// 実績バッジ画面への導線（統計 AppBar アクション）
+  static const Key badgeCollectionEntry = Key('badge_collection_entry');
+
+  /// 実績バッジ画面（AppBar）
+  static const Key badgeCollectionScreen = Key('badge_collection_screen');
+
+  /// 実績バッジ: 獲得率サマリーラベル
+  static const Key badgeSummaryLabel = Key('badge_summary_label');
+
+  /// 実績バッジ: 絞込チップ（すべて）
+  static const Key badgeFilterAll = Key('badge_filter_all');
+
+  /// 実績バッジ: 絞込チップ（獲得済み）
+  static const Key badgeFilterEarned = Key('badge_filter_earned');
+
+  /// 実績バッジ: 絞込チップ（未獲得）
+  static const Key badgeFilterUnearned = Key('badge_filter_unearned');
+
+  /// 実績バッジ: 空状態
+  static const Key badgeEmpty = Key('badge_empty');
+
+  /// 実績バッジ: 指定バッジの行（id を指定）
+  static Key badgeRow(String id) => Key('badge_row_$id');
 }

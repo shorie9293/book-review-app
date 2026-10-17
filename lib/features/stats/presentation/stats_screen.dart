@@ -12,6 +12,7 @@ import 'package:book_review_app/features/stats/presentation/reading_trend_screen
 import 'package:book_review_app/features/share/presentation/share_card_capture.dart';
 import 'package:book_review_app/features/share/presentation/share_card_exporter.dart';
 import 'package:book_review_app/features/share/presentation/share_card_screen.dart';
+import 'package:book_review_app/features/badges/presentation/badge_collection_screen.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/finish_forecast_view_model.dart';
 import 'package:book_review_app/features/stats/presentation/viewmodel/stats_view_model.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
@@ -116,6 +117,23 @@ class _StatsScreenState extends State<StatsScreen> {
       appBar: AppBar(
         title: const Text('読書統計'),
         actions: [
+          IconButton(
+            key: AppKeys.badgeCollectionEntry,
+            icon: const Icon(Icons.military_tech),
+            tooltip: '実績バッジ',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => BadgeCollectionScreen(
+                    dataSource: widget.dataSource is BadgeCollectionDataSource
+                        ? widget.dataSource! as BadgeCollectionDataSource
+                        : null,
+                    now: widget.now,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             key: AppKeys.finishForecastOpenButton,
             icon: const Icon(Icons.insights),
