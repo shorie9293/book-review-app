@@ -27,6 +27,7 @@ import 'package:book_review_app/features/reminder/presentation/reading_reminder_
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
 import 'package:book_review_app/core/infrastructure/app_lock_settings_screen.dart';
+import 'package:book_review_app/features/about/presentation/about_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
@@ -453,6 +454,20 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const ReadingReminderSettingsScreen(),
+                ),
+              ),
+            ),
+          ),
+          SemanticHelper.interactive(
+            testId: 'bookshelf_btn_about',
+            label: 'アプリについてを開く',
+            child: IconButton(
+              key: const Key('about_entry'),
+              icon: const Icon(Icons.info_outline),
+              tooltip: 'アプリについて',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const AboutScreen(),
                 ),
               ),
             ),
