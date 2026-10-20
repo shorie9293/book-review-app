@@ -18,6 +18,11 @@ class Book {
   /// 本のジャンル（正規化は GenreService に委ねる）
   final List<String> genres;
 
+  /// 物理的な置き場所（本棚の段など）。未設定は null。
+  ///
+  /// 正規化・比較は ShelfLocationService に委ねる。
+  final String? location;
+
   /// 読書状態（積読/読書中/読了）
   final ReadingStatus readingStatus;
 
@@ -41,6 +46,7 @@ class Book {
     this.pageCount,
     this.description,
     this.genres = const [],
+    this.location,
     this.readingStatus = ReadingStatus.unread,
     this.currentPage = 0,
     this.finishedAt,
@@ -57,6 +63,8 @@ class Book {
     bool clearAddedAt = false,
     List<String>? genres,
     bool clearGenres = false,
+    String? location,
+    bool clearLocation = false,
   }) {
     return Book(
       id: id,
@@ -73,6 +81,7 @@ class Book {
       finishedAt: clearFinishedAt ? null : (finishedAt ?? this.finishedAt),
       addedAt: clearAddedAt ? null : (addedAt ?? this.addedAt),
       genres: clearGenres ? const [] : (genres ?? this.genres),
+      location: clearLocation ? null : (location ?? this.location),
     );
   }
 

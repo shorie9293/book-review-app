@@ -406,4 +406,26 @@ class AppKeys {
 
   /// 貸出: 指定貸出の行
   static Key loanRow(String loanId) => Key('loan_row_$loanId');
+
+  /// 蔵書詳細: 所在セクション
+  static const Key locationSection = Key('location_section');
+
+  /// 蔵書詳細: 所在編集の導線
+  static const Key locationEditButton = Key('location_edit_button');
+
+  /// 蔵書詳細: 所在入力欄（ダイアログ内）
+  static const Key locationInput = Key('location_input');
+
+  /// 蔵書詳細: 所在の保存ボタン（ダイアログ内）
+  static const Key locationSave = Key('location_save');
+
+  /// 蔵書詳細: 所在を消すボタン（ダイアログ内）
+  static const Key locationClear = Key('location_clear');
+
+  /// 蔵書詳細: 所在表示テキスト
+  static const Key locationValue = Key('location_value');
+
+  /// 本棚: 指定所在の絞り込みチップ
+  static Key locationFilterChip(String location) =>
+      Key('library_location_chip_$location');
 }

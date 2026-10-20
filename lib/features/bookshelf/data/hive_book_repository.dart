@@ -36,6 +36,7 @@ class HiveBookRepository implements BookRepository {
       'pageCount': book.pageCount,
       'description': book.description,
       'genres': book.genres,
+      'location': book.location,
       'readingStatus': book.readingStatus.name,
       'currentPage': book.currentPage,
       'finishedAt': book.finishedAt?.toIso8601String(),
@@ -58,6 +59,7 @@ class HiveBookRepository implements BookRepository {
       description: map['description'] as String?,
       genres: (map['genres'] as List?)?.map((e) => e.toString()).toList() ??
           const [],
+      location: map['location'] as String?,
       readingStatus: ReadingStatus.fromStorage(map['readingStatus']),
       currentPage: (map['currentPage'] as int?) ?? 0,
       finishedAt: map['finishedAt'] != null

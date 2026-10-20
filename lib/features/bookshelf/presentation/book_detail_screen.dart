@@ -10,6 +10,7 @@ import 'package:book_review_app/features/bookshelf/domain/reading_status_service
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
+import 'package:book_review_app/features/locations/domain/shelf_location_service.dart';
 import 'package:book_review_app/features/loan/domain/book_loan_service.dart';
 import 'package:book_review_app/features/loan/presentation/loan_edit_dialog.dart';
 import 'package:book_review_app/features/loan/presentation/loan_management_screen.dart';
@@ -338,6 +339,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 _buildNoteSection(),
                 const SizedBox(height: 16),
                 _buildGenreSection(book),
+                const SizedBox(height: 16),
+                _buildLocationSection(book),
                 if (widget.loanRepository != null) ...[
                   const SizedBox(height: 16),
                   _buildLoanSection(book),
@@ -593,6 +596,133 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// 所在（物理的な置き場所）の表示・編集セクション。
+  ///
+  /// 編集は必ず [BookRepository.updateBook] へ到達させて永続化する。
+  Widget _buildLocationSection(Book book) {
+    final location = ShelfLocationService.locationOf(book);
+    return Card(
+      key: AppKeys.locationSection,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.place_outlined, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  '所在',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                SemanticHelper.interactive(
+                  testId: 'book_detail_btn_edit_location',
+                  label: '所在を編集',
+                  child: TextButton.icon(
+                    key: AppKeys.locationEditButton,
+                    onPressed: _showLocationInputDialog,
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('所在を編集'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (location == null)
+              Text(
+                '所在未設定',
+                style: TextStyle(color: Colors.grey.shade600),
+              )
+            else
+              Text(location, key: AppKeys.locationValue),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 所在入力ダイアログを開き、確定値を永続化する。
+  ///
+  /// 検証エラー時はダイアログを閉じずにエラーを表示する。
+  /// 「所在を消す」は空文字を返し、所在地を null に戻す。
+  Future<void> _showLocationInputDialog() async {
+    final current = _book ?? widget.book;
+    final existing = ShelfLocationService.locationOf(current);
+    final controller = TextEditingController(text: existing ?? '');
+    String? error;
+
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('所在を編集'),
+          content: SemanticHelper.textField(
+            testId: 'book_detail_txt_location',
+            label: '所在',
+            child: TextField(
+              key: AppKeys.locationInput,
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: '所在',
+                hintText: '例: 居間の本棚 2段目',
+                errorText: error,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('やめる'),
+            ),
+            if (existing != null)
+              TextButton(
+                key: AppKeys.locationClear,
+                onPressed: () => Navigator.of(dialogContext).pop(''),
+                child: const Text('所在を消す'),
+              ),
+            SemanticHelper.interactive(
+              testId: 'book_detail_btn_save_location',
+              label: '所在を保存',
+              child: TextButton(
+                key: AppKeys.locationSave,
+                onPressed: () {
+                  final message =
+                      ShelfLocationService.validateNew(controller.text);
+                  if (message != null) {
+                    setDialogState(() => error = message);
+                    return;
+                  }
+                  Navigator.of(dialogContext).pop(
+                    ShelfLocationService.normalize(controller.text),
+                  );
+                },
+                child: const Text('保存'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (value == null || !mounted) return;
+    await _persistLocation(value);
+  }
+
+  /// 所在を永続化して画面へ反映する（空文字は null に戻す）。
+  Future<void> _persistLocation(String value) async {
+    final current = _book ?? widget.book;
+    final updated = current.copyWith(
+      location: value,
+      clearLocation: value.isEmpty,
+    );
+    await widget.bookRepository.updateBook(updated);
+    if (!mounted) return;
+    setState(() => _book = updated);
   }
 
   /// 貸出セクション（ListView 最下部・loanRepository 非null のときのみ）。

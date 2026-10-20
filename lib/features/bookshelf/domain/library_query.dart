@@ -1,6 +1,7 @@
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
+import 'package:book_review_app/features/locations/domain/shelf_location_service.dart';
 
 /// 本棚の並び替え順
 enum LibrarySortOrder {
@@ -44,6 +45,9 @@ class LibraryQuery {
   /// 絞り込むジャンル（正規化済み・空なら全ジャンル）
   final Set<String> genres;
 
+  /// 絞り込む所在（正規化済み・空なら全所在）
+  final Set<String> locations;
+
   /// 並び替え順
   final LibrarySortOrder sortOrder;
 
@@ -51,6 +55,7 @@ class LibraryQuery {
     this.text = '',
     this.statuses = const {},
     this.genres = const {},
+    this.locations = const {},
     this.sortOrder = LibrarySortOrder.addedAtDesc,
   });
 
@@ -59,15 +64,18 @@ class LibraryQuery {
     String? text,
     Set<ReadingStatus>? statuses,
     Set<String>? genres,
+    Set<String>? locations,
     LibrarySortOrder? sortOrder,
     bool clearText = false,
     bool clearStatuses = false,
     bool clearGenres = false,
+    bool clearLocations = false,
   }) {
     return LibraryQuery(
       text: clearText ? '' : (text ?? this.text),
       statuses: clearStatuses ? const {} : (statuses ?? this.statuses),
       genres: clearGenres ? const {} : (genres ?? this.genres),
+      locations: clearLocations ? const {} : (locations ?? this.locations),
       sortOrder: sortOrder ?? this.sortOrder,
     );
   }
@@ -77,6 +85,7 @@ class LibraryQuery {
       text.isEmpty &&
       statuses.isEmpty &&
       genres.isEmpty &&
+      locations.isEmpty &&
       sortOrder == LibrarySortOrder.addedAtDesc;
 
   /// 有効な絞り込み条件の数（text / statuses / 非既定ソート）。
@@ -84,6 +93,7 @@ class LibraryQuery {
       (text.trim().isEmpty ? 0 : 1) +
       statuses.length +
       (genres.isEmpty ? 0 : 1) +
+      (locations.isEmpty ? 0 : 1) +
       (sortOrder == LibrarySortOrder.addedAtDesc ? 0 : 1);
 }
 
@@ -148,6 +158,13 @@ class LibraryQueryService {
         final (i, book) = entry;
         return GenreService.matches(book, genres);
       });
+    }
+
+    // 所在絞り込み（空なら全所在）
+    if (query.locations.isNotEmpty) {
+      result = result.where(
+        (entry) => ShelfLocationService.matches(entry.$2, query.locations),
+      );
     }
 
     final filtered = result.toList(growable: false);

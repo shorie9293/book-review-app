@@ -21,6 +21,12 @@ class LibraryFilterBar extends StatelessWidget {
   /// ジャンルごとの蔵書件数（チップの表示用）。
   final Map<String, int> genreCounts;
 
+  /// 絞り込みに提示する所在一覧（件数降順・正規化済み）。
+  final List<String> locations;
+
+  /// 所在ごとの蔵書件数（チップの表示用）。
+  final Map<String, int> locationCounts;
+
   const LibraryFilterBar({
     super.key,
     required this.query,
@@ -29,6 +35,8 @@ class LibraryFilterBar extends StatelessWidget {
     required this.onChanged,
     this.genres = const [],
     this.genreCounts = const {},
+    this.locations = const [],
+    this.locationCounts = const {},
   });
 
   @override
@@ -129,6 +137,36 @@ class LibraryFilterBar extends StatelessWidget {
                           final next = Set<String>.from(query.genres);
                           selected ? next.add(genre) : next.remove(genre);
                           onChanged(query.copyWith(genres: next));
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+          if (locations.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 40,
+              child: ListView(
+                key: const Key('library_location_chip_list'),
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final location in locations)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        key: AppKeys.locationFilterChip(location),
+                        label: Text(
+                          locationCounts[location] != null
+                              ? '$location (${locationCounts[location]})'
+                              : location,
+                        ),
+                        selected: query.locations.contains(location),
+                        onSelected: (selected) {
+                          final next = Set<String>.from(query.locations);
+                          selected ? next.add(location) : next.remove(location);
+                          onChanged(query.copyWith(locations: next));
                         },
                       ),
                     ),

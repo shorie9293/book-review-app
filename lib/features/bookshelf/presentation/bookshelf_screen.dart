@@ -12,6 +12,7 @@ import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_
 import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
 import 'package:book_review_app/features/bookshelf/presentation/stagnant_books_screen.dart';
+import 'package:book_review_app/features/locations/domain/shelf_location_service.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/goals/presentation/daily_reading_goal_screen.dart';
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
@@ -518,6 +519,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             filteredCount: _visibleBooks.length,
             genres: GenreService.availableGenres(_books),
             genreCounts: GenreService.countByGenre(_books),
+            locations: ShelfLocationService.availableLocations(_books),
+            locationCounts: ShelfLocationService.countByLocation(_books),
             onChanged: (query) => setState(() => _query = query),
           ),
           Expanded(child: _buildBookList()),
