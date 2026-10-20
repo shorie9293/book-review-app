@@ -358,4 +358,52 @@ class AppKeys {
 
   /// 実績バッジ: 指定バッジの行（id を指定）
   static Key badgeRow(String id) => Key('badge_row_$id');
+
+  /// 貸出管理画面（Scaffold）
+  static const Key loanManagementScreen = Key('loan_management_screen');
+
+  /// 貸出管理: 絞込チップ（すべて）
+  static const Key loanFilterAll = Key('loan_filter_all');
+
+  /// 貸出管理: 絞込チップ（貸出中）
+  static const Key loanFilterActive = Key('loan_filter_active');
+
+  /// 貸出管理: 絞込チップ（返却予定間近・期限超過を含む）
+  static const Key loanFilterDueSoon = Key('loan_filter_due_soon');
+
+  /// 貸出管理: 絞込チップ（履歴＝返却済み）
+  static const Key loanFilterReturned = Key('loan_filter_returned');
+
+  /// 貸出管理: 借り手名の検索欄
+  static const Key loanSearchField = Key('loan_search_field');
+
+  /// 貸出管理・蔵書詳細: 貸出が無いときの空状態
+  static const Key loanEmpty = Key('loan_empty');
+
+  /// 貸出ダイアログ: 借り手名の入力欄
+  static const Key loanBorrowerField = Key('loan_borrower_field');
+
+  /// 貸出ダイアログ: 返却予定日の選択ボタン
+  static const Key loanDueButton = Key('loan_due_button');
+
+  /// 貸出ダイアログ: 確定ボタン
+  static const Key loanSaveButton = Key('loan_save_button');
+
+  /// 蔵書詳細: 貸出中一覧画面への導線
+  static const Key loanEntryButton = Key('loan_entry_button');
+
+  /// 蔵書詳細: 貸出セクション
+  static const Key loanDetailSection = Key('loan_detail_section');
+
+  /// 蔵書詳細: 現在の貸出状況（借り手 / 期限）
+  static const Key loanDetailStatusLabel = Key('loan_detail_status_label');
+
+  /// 蔵書詳細: 貸出を記録ボタン
+  static const Key loanLendButton = Key('loan_lend_button');
+
+  /// 貸出: 指定貸出の返却ボタン
+  static Key loanReturnButton(String loanId) => Key('loan_return_button_$loanId');
+
+  /// 貸出: 指定貸出の行
+  static Key loanRow(String loanId) => Key('loan_row_$loanId');
 }

@@ -3,6 +3,7 @@ import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dar
 import 'package:book_review_app/features/review/data/hive_review_repository.dart';
 import 'package:book_review_app/features/notes/data/hive_book_note_repository.dart';
 import 'package:book_review_app/features/queue/data/hive_reading_queue_repository.dart';
+import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart';
@@ -38,6 +39,7 @@ class _MainScreenState extends State<MainScreen> {
   final HiveBookNoteRepository _noteRepository = HiveBookNoteRepository();
   final HiveReadingQueueRepository _queueRepository =
       HiveReadingQueueRepository();
+  final HiveBookLoanRepository _loanRepository = HiveBookLoanRepository();
   bool _initialized = false;
 
   @override
@@ -51,6 +53,7 @@ class _MainScreenState extends State<MainScreen> {
     await _reviewRepository.init();
     await _noteRepository.init();
     await _queueRepository.init();
+    await _loanRepository.init();
     if (mounted) {
       setState(() {
         _initialized = true;
@@ -75,6 +78,7 @@ class _MainScreenState extends State<MainScreen> {
       reviewRepository: _reviewRepository,
       noteRepository: _noteRepository,
       queueRepository: _queueRepository,
+      loanRepository: _loanRepository,
       textScale: widget.textScale,
       onScaleChanged: widget.onScaleChanged,
       themeMode: widget.themeMode,

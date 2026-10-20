@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/domain/models/book.dart';
+import 'package:book_review_app/domain/models/book_loan.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
+import 'package:book_review_app/domain/repositories/book_loan_repository.dart';
 import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
+import 'package:book_review_app/features/loan/domain/book_loan_service.dart';
+import 'package:book_review_app/features/loan/presentation/loan_edit_dialog.dart';
+import 'package:book_review_app/features/loan/presentation/loan_management_screen.dart';
 import 'package:book_review_app/features/notes/presentation/book_notes_screen.dart';
 import 'package:book_review_app/features/review/presentation/review_screen.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
@@ -169,12 +174,20 @@ class BookDetailScreen extends StatefulWidget {
   /// メモ・引用リポジトリ（未指定ならメモ一覧は空扱い）
   final BookNoteRepository? noteRepository;
 
+  /// 貸出リポジトリ（未指定なら貸出セクションを表示しない）
+  final BookLoanRepository? loanRepository;
+
+  /// 現在日時の注入（試練の決定論化用）。未指定なら実時計。
+  final DateTime? nowOverride;
+
   const BookDetailScreen({
     super.key,
     required this.book,
     required this.bookRepository,
     required this.reviewRepository,
     this.noteRepository,
+    this.loanRepository,
+    this.nowOverride,
   });
 
   @override
@@ -184,6 +197,7 @@ class BookDetailScreen extends StatefulWidget {
 class _BookDetailScreenState extends State<BookDetailScreen> {
   List<Review> _reviews = const [];
   List<BookNote> _notes = const [];
+  List<BookLoan> _loans = const [];
   bool _loading = true;
 
   /// 進行ページ更新で変わった最新の本（widget.book を上書きする）。
@@ -202,13 +216,75 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         widget.noteRepository!.getNotesByBookId(widget.book.id)
       else
         Future<List<BookNote>>.value(const []),
+      if (widget.loanRepository != null)
+        widget.loanRepository!.loadLoans()
+      else
+        Future<List<BookLoan>>.value(const []),
     ]);
     if (!mounted) return;
     setState(() {
       _reviews = results[0] as List<Review>;
       _notes = results[1] as List<BookNote>;
+      _loans = results[2] as List<BookLoan>;
       _loading = false;
     });
+  }
+
+  /// 貸出の再読込（返却・新規記録の後に呼ぶ）。
+  Future<void> _reloadLoans() async {
+    final repository = widget.loanRepository;
+    if (repository == null) return;
+    final loans = await repository.loadLoans();
+    if (!mounted) return;
+    setState(() => _loans = loans);
+  }
+
+  /// この本の未返却貸出（最新の lentAt）。
+  BookLoan? get _activeLoan => BookLoanService.activeLoanFor(
+        _loans,
+        widget.book.id,
+      );
+
+  DateTime get _loanNow => widget.nowOverride ?? DateTime.now();
+
+  /// 貸出を記録するダイアログを開き、確定されたら永続化する。
+  Future<void> _lendBook() async {
+    final repository = widget.loanRepository;
+    if (repository == null) return;
+    final loan = await LoanEditDialog.show(
+      context,
+      bookId: widget.book.id,
+      lentAt: _loanNow,
+    );
+    if (loan == null || !mounted) return;
+    final current = await repository.loadLoans();
+    await repository.saveLoans(BookLoanService.addLoan(current, loan));
+    await _reloadLoans();
+  }
+
+  /// この本の未返却貸出を返却済みにして永続化する。
+  Future<void> _returnLoan(BookLoan loan) async {
+    final repository = widget.loanRepository;
+    if (repository == null) return;
+    final current = await repository.loadLoans();
+    await repository.saveLoans(
+      BookLoanService.markReturned(current, loan.id, _loanNow),
+    );
+    await _reloadLoans();
+  }
+
+  /// 貸出中一覧画面を開く。
+  void _openLoanManagement() {
+    final repository = widget.loanRepository;
+    if (repository == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LoanManagementScreen(
+          repository: repository,
+          nowOverride: widget.nowOverride,
+        ),
+      ),
+    );
   }
 
   void _openReviewScreen() {
@@ -262,6 +338,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 _buildNoteSection(),
                 const SizedBox(height: 16),
                 _buildGenreSection(book),
+                if (widget.loanRepository != null) ...[
+                  const SizedBox(height: 16),
+                  _buildLoanSection(book),
+                ],
               ],
             ),
     );
@@ -509,6 +589,72 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     ),
                 ],
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 貸出セクション（ListView 最下部・loanRepository 非null のときのみ）。
+  ///
+  /// 未返却の貸出があれば借り手と期限を、無ければ記録導線を出す。
+  Widget _buildLoanSection(Book book) {
+    final active = _activeLoan;
+    final now = _loanNow;
+    return Card(
+      key: AppKeys.loanDetailSection,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.book_outlined, size: 18),
+                const SizedBox(width: 6),
+                Text('貸出', style: Theme.of(context).textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 4),
+            if (active != null) ...[
+              Text(
+                '${active.borrower} / ${BookLoanService.dueLabel(active, now: now)}',
+                key: AppKeys.loanDetailStatusLabel,
+              ),
+              const SizedBox(height: 4),
+              SemanticHelper.interactive(
+                testId: 'book_detail_btn_return_loan',
+                label: '「${active.borrower}」への貸出を返却済みにする',
+                child: OutlinedButton.icon(
+                  key: AppKeys.loanReturnButton(active.id),
+                  onPressed: () => _returnLoan(active),
+                  icon: const Icon(Icons.assignment_turned_in_outlined,
+                      size: 18),
+                  label: const Text('返却'),
+                ),
+              ),
+            ] else
+              SemanticHelper.interactive(
+                testId: 'book_detail_btn_lend',
+                label: '「${book.title}」の貸出を記録',
+                child: FilledButton.icon(
+                  key: AppKeys.loanLendButton,
+                  onPressed: _lendBook,
+                  icon: const Icon(Icons.person_add_alt, size: 18),
+                  label: const Text('貸出を記録'),
+                ),
+              ),
+            const SizedBox(height: 8),
+            SemanticHelper.interactive(
+              testId: 'book_detail_btn_loan_management',
+              label: '貸出中一覧を開く',
+              child: TextButton.icon(
+                key: AppKeys.loanEntryButton,
+                onPressed: _openLoanManagement,
+                icon: const Icon(Icons.list_alt, size: 18),
+                label: const Text('貸出中一覧を開く'),
+              ),
+            ),
           ],
         ),
       ),

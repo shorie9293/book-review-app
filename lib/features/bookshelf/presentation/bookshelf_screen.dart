@@ -17,6 +17,7 @@ import 'package:book_review_app/features/goals/presentation/daily_reading_goal_s
 import 'package:book_review_app/features/import/presentation/bulk_import_screen.dart';
 import 'package:book_review_app/features/stats/presentation/stats_screen.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
+import 'package:book_review_app/domain/repositories/book_loan_repository.dart';
 import 'package:book_review_app/domain/repositories/reading_queue_repository.dart';
 import 'package:book_review_app/features/queue/presentation/reading_queue_screen.dart';
 import 'package:book_review_app/features/notes/presentation/favorite_notes_screen.dart';
@@ -44,6 +45,9 @@ class BookshelfScreen extends StatefulWidget {
   /// 「次に読む」キューのリポジトリ（未指定なら導線を表示しない）
   final ReadingQueueRepository? queueRepository;
 
+  /// 貸出のリポジトリ（未指定なら蔵書詳細に貸出セクションを表示しない）
+  final BookLoanRepository? loanRepository;
+
   /// 読書時間画面のリポジトリ（未指定なら Hive 実装を使う・試練用差し替え口）
   final ReadingSessionRepository? readingSessionRepositoryOverride;
 
@@ -67,6 +71,7 @@ class BookshelfScreen extends StatefulWidget {
     this.reviewRepository,
     this.noteRepository,
     this.queueRepository,
+    this.loanRepository,
     this.readingSessionRepositoryOverride,
     this.textScale = 1.0,
     this.onScaleChanged,
@@ -723,6 +728,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           bookRepository: widget.repository,
           reviewRepository: widget.reviewRepository!,
           noteRepository: widget.noteRepository,
+          loanRepository: widget.loanRepository,
         ),
       ),
     );
