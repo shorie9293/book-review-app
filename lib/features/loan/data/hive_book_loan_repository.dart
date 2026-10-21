@@ -63,6 +63,14 @@ class HiveBookLoanRepository implements BookLoanRepository {
 
 /// テスト・プレビュー用のインメモリ実装。
 class InMemoryBookLoanRepository implements BookLoanRepository {
+  InMemoryBookLoanRepository([List<BookLoan>? initial]) {
+    if (initial != null) {
+      for (final l in initial) {
+        _store[l.id] = l;
+      }
+    }
+  }
+
   final Map<String, BookLoan> _store = {};
 
   /// 現在保持している件数。

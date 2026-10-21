@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
 
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/domain/models/book.dart';
@@ -10,6 +13,7 @@ import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
 import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
+import 'package:book_review_app/features/loan/data/loan_due_reminder_repository.dart';
 import 'package:book_review_app/features/loan/domain/book_loan_service.dart';
 
 /// テスト用モック: BookRepository
@@ -61,6 +65,21 @@ class MockReviewRepository implements ReviewRepository {
 
 void main() {
   final now = DateTime.utc(2026, 9, 18, 12).toLocal();
+
+  // 蔵書詳細 → 貸出管理の実導線は HiveLoanDueReminderRepository を
+  // 注入するため、試練側で Hive の箱を用意する（未初期化のまま
+  // openBox すると非同期例外が zone へ漏れてしまう）。
+  late Directory tmpDir;
+  setUp(() async {
+    tmpDir = Directory.systemTemp.createTempSync('loan_detail_wiring_');
+    Hive.init(tmpDir.path);
+    await Hive.openBox<String>(HiveLoanDueReminderRepository.boxName);
+  });
+  tearDown(() async {
+    await Hive.close();
+    if (tmpDir.existsSync()) tmpDir.deleteSync(recursive: true);
+  });
+
   DateTime day(int offset) => DateTime.utc(2026, 9, 18 + offset, 12).toLocal();
 
   final book = Book(

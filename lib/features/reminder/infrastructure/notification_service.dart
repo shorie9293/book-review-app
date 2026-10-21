@@ -12,6 +12,12 @@ class BookNotificationService {
   static const int _testNotificationId = 999;
   static const String _channelId = 'book_reading';
 
+  /// 返却期限リマインダーの通知ID（単一・毎日繰り返し）。
+  static const int _loanDueBaseId = 300;
+
+  /// 返却期限リマインダーの通知チャネル。
+  static const String _loanChannelId = 'book_loan';
+
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
@@ -143,6 +149,51 @@ class BookNotificationService {
     }
   }
 
+  /// 返却期限リマインダーを毎日 [hour]:[minute] に繰り返し登録する。
+  ///
+  /// 失敗しても例外は投げない（[scheduleReadingReminder] と同じ流儀）。
+  Future<void> scheduleLoanDueReminder({
+    required String body,
+    required int hour,
+    required int minute,
+  }) async {
+    try {
+      final scheduleMode = await _getScheduleMode();
+      await _plugin.zonedSchedule(
+        _loanDueBaseId,
+        '📚 返却期限のお知らせ',
+        body,
+        _nextInstanceOfTime(hour, minute),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _loanChannelId,
+            '返却期限',
+            channelDescription: '返却期限リマインダーの通知',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: scheduleMode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } catch (e) {
+      debugPrint(
+          '[BookNotificationService] scheduleLoanDueReminder 失敗: $e');
+    }
+  }
+
+  /// 返却期限リマインダー（ID 300）をキャンセルする。
+  Future<void> cancelLoanDueReminder() async {
+    try {
+      await _plugin.cancel(_loanDueBaseId);
+    } catch (e) {
+      debugPrint('[BookNotificationService] cancelLoanDueReminder 失敗: $e');
+    }
+  }
+
   /// テスト通知を即座に送信する。
   Future<void> sendTestNotification() async {
     try {
@@ -192,6 +243,17 @@ class BookNotificationService {
     var scheduled =
         tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     while (scheduled.weekday != weekday || scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
+
+  /// 次に来る [hour]:[minute]（今日の時刻が過ぎていれば明日）を返す。
+  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (!scheduled.isAfter(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;

@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/domain/models/book_loan.dart';
 import 'package:book_review_app/domain/repositories/book_loan_repository.dart';
+import 'package:book_review_app/features/loan/data/loan_due_reminder_repository.dart';
 import 'package:book_review_app/features/loan/domain/book_loan_service.dart';
+import 'package:book_review_app/features/loan/domain/loan_due_reminder_coordinator.dart';
+import 'package:book_review_app/features/loan/domain/loan_due_reminder_service.dart';
+import 'package:book_review_app/features/loan/domain/loan_due_reminder_settings.dart';
+import 'package:book_review_app/features/loan/infrastructure/loan_due_reminder_scheduler.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 /// 貸出管理の絞込。
@@ -23,11 +28,20 @@ class LoanManagementScreen extends StatefulWidget {
   /// bookId → 書名の解決関数。null なら書名は表示しない。
   final Future<Map<String, String>> Function()? bookTitleLoader;
 
+  /// 返却期限リマインダー設定の永続化先。
+  /// [reminderScheduler] と両方指定したときのみ通知設定を描画する。
+  final LoanDueReminderRepository? reminderRepository;
+
+  /// 返却期限リマインダーの通知スケジューラ。
+  final LoanDueReminderScheduler? reminderScheduler;
+
   const LoanManagementScreen({
     super.key,
     required this.repository,
     this.nowOverride,
     this.bookTitleLoader,
+    this.reminderRepository,
+    this.reminderScheduler,
   });
 
   @override
@@ -42,12 +56,22 @@ class _LoanManagementScreenState extends State<LoanManagementScreen> {
   String _query = '';
   bool _loading = true;
 
+  LoanDueReminderSettings? _reminderSettings;
+  LoanDueReminderPlan? _reminderPlan;
+  int? _selectedHour;
+  bool _reminderSaving = false;
+
   DateTime get _now => widget.nowOverride ?? DateTime.now();
+
+  /// 通知設定セクションを描画してよいか（両依存が揃っているときのみ）。
+  bool get _reminderEnabled =>
+      widget.reminderRepository != null && widget.reminderScheduler != null;
 
   @override
   void initState() {
     super.initState();
     _load();
+    if (_reminderEnabled) _loadReminderSettings();
   }
 
   @override
@@ -114,6 +138,102 @@ class _LoanManagementScreenState extends State<LoanManagementScreen> {
         BookLoanService.markReturned(current, loan.id, _now);
     await widget.repository.saveLoans(updated);
     await _load();
+    // 対象件数が変わるため通知本文を作り直す（失敗しても画面は壊さない）。
+    if (_reminderEnabled) await _rescheduleReminder();
+  }
+
+  /// 保存済みの通知設定を読み込み、通知の登録状態も同期する。
+  Future<void> _loadReminderSettings() async {
+    final repo = widget.reminderRepository;
+    if (repo == null) return;
+    LoanDueReminderSettings settings;
+    try {
+      settings = await repo.load();
+    } catch (_) {
+      settings = LoanDueReminderSettings.defaults();
+    }
+    if (!mounted) return;
+    setState(() {
+      _reminderSettings = settings;
+      _selectedHour = settings.hour;
+    });
+    await _rescheduleReminder();
+  }
+
+  /// 調整役に登録/解除を委ね、プレビュー用の計画を更新する。
+  Future<void> _rescheduleReminder() async {
+    final repo = widget.reminderRepository;
+    final scheduler = widget.reminderScheduler;
+    if (repo == null || scheduler == null) return;
+    try {
+      final coordinator = LoanDueReminderCoordinator(
+        settingsRepository: repo,
+        loanRepository: widget.repository,
+        scheduler: scheduler,
+        clock: () => _now,
+        bookTitleLoader: widget.bookTitleLoader,
+      );
+      final plan = await coordinator.reschedule();
+      if (!mounted) return;
+      setState(() => _reminderPlan = plan);
+    } catch (_) {
+      // 通知系の失敗で貸出管理の操作を止めない。
+    }
+  }
+
+  /// ON/OFF を即座に永続化し、通知を再調整する。
+  Future<void> _onReminderEnabledChanged(bool value) async {
+    final repo = widget.reminderRepository;
+    final current = _reminderSettings;
+    if (repo == null || current == null) return;
+    final updated = current.copyWith(
+      enabled: value,
+      hour: _selectedHour ?? current.hour,
+      updatedAt: _now,
+    );
+    setState(() {
+      _reminderSettings = updated;
+      _reminderSaving = true;
+    });
+    try {
+      await repo.save(updated);
+    } catch (_) {
+      // 保存失敗でも UI は落とさない（次回保存で再試行される）。
+    }
+    await _rescheduleReminder();
+    if (!mounted) return;
+    setState(() => _reminderSaving = false);
+  }
+
+  /// 時刻（時）を永続化し、通知を再調整する。
+  Future<void> _saveReminderSettings() async {
+    final repo = widget.reminderRepository;
+    final current = _reminderSettings;
+    if (repo == null || current == null) return;
+    final updated = current.copyWith(
+      hour: _selectedHour ?? current.hour,
+      minute: 0,
+      updatedAt: _now,
+    );
+    setState(() {
+      _reminderSettings = updated;
+      _reminderSaving = true;
+    });
+    try {
+      await repo.save(updated);
+    } catch (_) {
+      // 同上。
+    }
+    await _rescheduleReminder();
+    if (!mounted) return;
+    setState(() => _reminderSaving = false);
+  }
+
+  String get _reminderStatusLabel {
+    final plan = _reminderPlan;
+    if (plan == null) return '通知の状態を確認中…';
+    if (plan.isEmpty) return '対象なし';
+    return '本日から通知: ${plan.count}件';
   }
 
   @override
@@ -167,7 +287,76 @@ class _LoanManagementScreenState extends State<LoanManagementScreen> {
                       _buildLoanRow(visible[index]),
                 ),
         ),
+        if (_reminderEnabled && _reminderSettings != null)
+          _buildReminderSection(),
       ],
+    );
+  }
+
+  /// 返却期限の通知設定セクション（両依存が注入されたときのみ）。
+  Widget _buildReminderSection() {
+    final settings = _reminderSettings!;
+    final hour = _selectedHour ?? settings.hour;
+    return Card(
+      key: AppKeys.loanDueReminderSection,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile(
+              key: AppKeys.loanDueReminderSwitch,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: const Text('返却期限の通知'),
+              subtitle: const Text('毎日決まった時刻にお知らせする'),
+              value: settings.enabled,
+              onChanged: _reminderSaving ? null : _onReminderEnabledChanged,
+            ),
+            Row(
+              children: [
+                const Text('通知時刻'),
+                const SizedBox(width: 12),
+                DropdownButton<int>(
+                  key: AppKeys.loanDueReminderHour,
+                  value: hour,
+                  items: [
+                    for (var h = 0; h < 24; h++)
+                      DropdownMenuItem<int>(
+                        value: h,
+                        child: Text('${h.toString().padLeft(2, '0')}:00'),
+                      ),
+                  ],
+                  onChanged: _reminderSaving
+                      ? null
+                      : (value) {
+                          if (value == null) return;
+                          setState(() => _selectedHour = value);
+                        },
+                ),
+                const Spacer(),
+                SemanticHelper.interactive(
+                  testId: 'loan_due_reminder_save_btn',
+                  label: '返却期限の通知設定を保存する',
+                  child: ElevatedButton(
+                    key: AppKeys.loanDueReminderSave,
+                    onPressed:
+                        _reminderSaving ? null : _saveReminderSettings,
+                    child: const Text('保存'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _reminderStatusLabel,
+              key: AppKeys.loanDueReminderStatus,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

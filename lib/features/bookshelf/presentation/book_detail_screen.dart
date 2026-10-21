@@ -11,7 +11,9 @@ import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/locations/domain/shelf_location_service.dart';
+import 'package:book_review_app/features/loan/data/loan_due_reminder_repository.dart';
 import 'package:book_review_app/features/loan/domain/book_loan_service.dart';
+import 'package:book_review_app/features/loan/infrastructure/loan_due_reminder_scheduler.dart';
 import 'package:book_review_app/features/loan/presentation/loan_edit_dialog.dart';
 import 'package:book_review_app/features/loan/presentation/loan_management_screen.dart';
 import 'package:book_review_app/features/notes/presentation/book_notes_screen.dart';
@@ -275,6 +277,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   }
 
   /// 貸出中一覧画面を開く。
+  ///
+  /// 返却期限の通知セクションは設定リポジトリと通知スケジューラの
+  /// 両方が揃ったときだけ描画されるため、実装をここで注入する
+  /// （注入しないと本番で通知設定が永久に出ない）。
   void _openLoanManagement() {
     final repository = widget.loanRepository;
     if (repository == null) return;
@@ -283,9 +289,18 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         builder: (_) => LoanManagementScreen(
           repository: repository,
           nowOverride: widget.nowOverride,
+          bookTitleLoader: _loadBookTitles,
+          reminderRepository: HiveLoanDueReminderRepository(),
+          reminderScheduler: NotificationServiceLoanDueReminderScheduler(),
         ),
       ),
     );
+  }
+
+  /// bookId → 書名（通知本文と貸出管理の一覧表示に使う）。
+  Future<Map<String, String>> _loadBookTitles() async {
+    final books = await widget.bookRepository.getBooks();
+    return {for (final b in books) b.id: b.title};
   }
 
   void _openReviewScreen() {

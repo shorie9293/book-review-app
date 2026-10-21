@@ -438,4 +438,19 @@ class AppKeys {
   /// 本棚: 指定所在の絞り込みチップ
   static Key locationFilterChip(String location) =>
       Key('library_location_chip_$location');
+
+  /// 貸出管理: 返却期限の通知設定セクション
+  static const Key loanDueReminderSection = Key('loan_due_reminder_section');
+
+  /// 貸出管理: 返却期限の通知 ON/OFF
+  static const Key loanDueReminderSwitch = Key('loan_due_reminder_switch');
+
+  /// 貸出管理: 返却期限の通知時刻（時）
+  static const Key loanDueReminderHour = Key('loan_due_reminder_hour');
+
+  /// 貸出管理: 返却期限の通知設定 保存ボタン
+  static const Key loanDueReminderSave = Key('loan_due_reminder_save');
+
+  /// 貸出管理: 返却期限の通知状態文言
+  static const Key loanDueReminderStatus = Key('loan_due_reminder_status');
 }
