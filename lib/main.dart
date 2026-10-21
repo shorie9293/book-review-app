@@ -6,6 +6,8 @@ import 'package:book_review_app/core/theme/theme_mode_repository.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:book_review_app/core/theme/text_scale_repository.dart';
 import 'package:book_review_app/core/theme/text_scale_setting.dart';
+import 'package:book_review_app/core/theme/reduce_motion_repository.dart';
+import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart';
 import 'package:book_review_app/features/tutorial/data/tutorial_repository.dart';
 import 'package:book_review_app/features/tutorial/presentation/tutorial_screen.dart';
@@ -29,12 +31,28 @@ class _MyAppState extends State<MyApp> {
   final TextScaleRepository _textScaleRepo = const TextScaleRepository();
   ThemeModeSetting _themeMode = ThemeModeSetting.system;
   final ThemeModeRepository _themeModeRepo = const ThemeModeRepository();
+  ReduceMotionSetting _reduceMotion = ReduceMotionSetting.system;
+  final ReduceMotionRepository _reduceMotionRepo = const ReduceMotionRepository();
 
   @override
   void initState() {
     super.initState();
     _loadTextScale();
     _loadThemeMode();
+    _loadReduceMotion();
+  }
+
+  /// 保存された「動きを減らす」設定を読み込む（未保存はシステム従属）。
+  Future<void> _loadReduceMotion() async {
+    final saved = await _reduceMotionRepo.load();
+    if (mounted && saved != null) {
+      setState(() => _reduceMotion = saved);
+    }
+  }
+
+  /// 「動きを減らす」設定を変更する（永続化は設定画面が行う）。
+  void _changeReduceMotion(ReduceMotionSetting setting) {
+    setState(() => _reduceMotion = setting);
   }
 
   /// 保存されたテーマ設定を読み込む（未保存はシステム従属）。
@@ -77,8 +95,11 @@ class _MyAppState extends State<MyApp> {
       darkTheme: AppTheme.dark,
       themeMode: _themeMode.toThemeMode(),
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          textScaler: TextScaler.linear(_textScale),
+        data: applyReduceMotion(
+          MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(_textScale),
+          ),
+          _reduceMotion,
         ),
         child: child ?? const SizedBox.shrink(),
       ),
@@ -91,6 +112,8 @@ class _MyAppState extends State<MyApp> {
               onScaleChanged: _changeTextScale,
               themeMode: _themeMode,
               onThemeModeChanged: _changeThemeMode,
+              reduceMotion: _reduceMotion,
+              onReduceMotionChanged: _changeReduceMotion,
             ),
           ),
         ),

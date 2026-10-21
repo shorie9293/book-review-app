@@ -6,6 +6,7 @@ import 'package:book_review_app/features/queue/data/hive_reading_queue_repositor
 import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
+import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 class MainScreen extends StatefulWidget {
@@ -21,12 +22,20 @@ class MainScreen extends StatefulWidget {
   /// テーマ変更時のコールバック
   final ValueChanged<ThemeModeSetting>? onThemeModeChanged;
 
+  /// 現在の「動きを減らす」設定
+  final ReduceMotionSetting reduceMotion;
+
+  /// 「動きを減らす」設定の変更コールバック
+  final ValueChanged<ReduceMotionSetting>? onReduceMotionChanged;
+
   const MainScreen({
     super.key,
     this.textScale = 1.0,
     this.onScaleChanged,
     this.themeMode = ThemeModeSetting.system,
     this.onThemeModeChanged,
+    this.reduceMotion = ReduceMotionSetting.system,
+    this.onReduceMotionChanged,
   });
 
   @override
@@ -83,6 +92,8 @@ class _MainScreenState extends State<MainScreen> {
       onScaleChanged: widget.onScaleChanged,
       themeMode: widget.themeMode,
       onThemeModeChanged: widget.onThemeModeChanged,
+      reduceMotion: widget.reduceMotion,
+      onReduceMotionChanged: widget.onReduceMotionChanged,
     );
   }
 }

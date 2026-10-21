@@ -14,6 +14,16 @@ class AppKeys {
   static Key themeModeOption(String storageKey) =>
       Key('theme_mode_option_$storageKey');
 
+  /// 「動きを減らす」設定画面（Scaffold）
+  static const Key reduceMotionScreen = Key('reduce_motion_screen');
+
+  /// 「動きを減らす」設定画面への導線（本棚 AppBar アクション）
+  static const Key reduceMotionEntry = Key('reduce_motion_entry');
+
+  /// 「動きを減らす」3択の各選択肢（'system' / 'off' / 'on'）
+  static Key reduceMotionOption(String storageKey) =>
+      Key('reduce_motion_option_$storageKey');
+
   /// アプリロック設定画面（Scaffold）
   static const Key appLockScreen = Key('app_lock_screen');
 

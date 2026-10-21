@@ -6,6 +6,7 @@ import 'package:book_review_app/features/reading/domain/reading_session.dart';
 import 'package:book_review_app/features/reading/domain/reading_session_service.dart';
 import 'package:book_review_app/features/reading/domain/reading_stats.dart';
 import 'package:book_review_app/features/reading/presentation/widgets/reading_habit_heatmap.dart';
+import 'package:book_review_app/core/haptics.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
@@ -81,6 +82,8 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
   }
 
   void _startTimer() {
+    // 読書セッション開始を触覚で伝える。
+    hapticTap();
     setState(() {
       _startedAt = widget.now();
       _pendingMinutes = null;

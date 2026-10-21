@@ -28,10 +28,13 @@ import 'package:book_review_app/features/recommendation/presentation/recommendat
 import 'package:book_review_app/features/reminder/presentation/reading_reminder_settings_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
+import 'package:book_review_app/screens/reduce_motion_settings_screen.dart';
+import 'package:book_review_app/core/haptics.dart';
 import 'package:book_review_app/core/infrastructure/app_lock_settings_screen.dart';
 import 'package:book_review_app/features/about/presentation/about_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
+import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 class BookshelfScreen extends StatefulWidget {
@@ -64,6 +67,12 @@ class BookshelfScreen extends StatefulWidget {
   /// テーマ変更時のコールバック
   final ValueChanged<ThemeModeSetting>? onThemeModeChanged;
 
+  /// 現在の「動きを減らす」設定（設定画面へ渡す）
+  final ReduceMotionSetting reduceMotion;
+
+  /// 「動きを減らす」設定の変更コールバック
+  final ValueChanged<ReduceMotionSetting>? onReduceMotionChanged;
+
   const BookshelfScreen({
     super.key,
     required this.repository,
@@ -78,6 +87,8 @@ class BookshelfScreen extends StatefulWidget {
     this.onScaleChanged,
     this.themeMode = ThemeModeSetting.system,
     this.onThemeModeChanged,
+    this.reduceMotion = ReduceMotionSetting.system,
+    this.onReduceMotionChanged,
   });
 
   @override
@@ -162,6 +173,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
 
     await widget.repository.addBook(newBook);
     await _loadBooks();
+    // 蔵書の保存確定を触覚で伝える。
+    hapticTap();
 
     if (mounted) {
       setState(() {
@@ -306,6 +319,18 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  /// 「動きを減らす」設定画面を開く。
+  Future<void> _openReduceMotionSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReduceMotionSettingsScreen(
+          initial: widget.reduceMotion,
+          onChanged: widget.onReduceMotionChanged,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -438,6 +463,17 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 icon: const Icon(Icons.brightness_6),
                 onPressed: _openThemeModeSettings,
                 tooltip: 'テーマ設定',
+              ),
+            ),
+          if (widget.onReduceMotionChanged != null)
+            SemanticHelper.interactive(
+              testId: 'bookshelf_btn_reduce_motion_settings',
+              label: '動きを減らす設定を開く',
+              child: IconButton(
+                key: AppKeys.reduceMotionEntry,
+                icon: const Icon(Icons.motion_photos_off_outlined),
+                onPressed: _openReduceMotionSettings,
+                tooltip: '動きを減らす',
               ),
             ),
           SemanticHelper.interactive(
