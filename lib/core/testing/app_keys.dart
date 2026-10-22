@@ -453,4 +453,27 @@ class AppKeys {
 
   /// 貸出管理: 返却期限の通知状態文言
   static const Key loanDueReminderStatus = Key('loan_due_reminder_status');
+
+  /// 本棚: 重複蔵書のバナー
+  static const Key duplicateBanner = Key('bookshelf_duplicate_banner');
+
+  /// 本棚: 重複整理画面への導線
+  static const Key duplicateOpenButton = Key('bookshelf_duplicate_open');
+
+  /// 重複整理: 組カード
+  static Key duplicateGroupCard(String isbnKey) => Key('duplicate_group_$isbnKey');
+
+  /// 重複整理: 代表選択ラジオ
+  static Key duplicateKeepRadio(String bookId) => Key('duplicate_keep_$bookId');
+
+  /// 重複整理: 統合ボタン
+  static Key duplicateMergeButton(String isbnKey) =>
+      Key('duplicate_merge_$isbnKey');
+
+  /// 重複整理: 個別削除ボタン
+  static Key duplicateDeleteButton(String bookId) =>
+      Key('duplicate_delete_$bookId');
+
+  /// 重複整理: 空状態
+  static const Key duplicateEmpty = Key('duplicate_empty');
 }

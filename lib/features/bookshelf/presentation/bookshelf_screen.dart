@@ -12,6 +12,8 @@ import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_
 import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
 import 'package:book_review_app/features/bookshelf/presentation/stagnant_books_screen.dart';
+import 'package:book_review_app/features/duplicates/domain/duplicate_book_service.dart';
+import 'package:book_review_app/features/duplicates/presentation/duplicate_books_screen.dart';
 import 'package:book_review_app/features/locations/domain/shelf_location_service.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/goals/presentation/daily_reading_goal_screen.dart';
@@ -158,6 +160,19 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   }
 
   Future<void> _addBookToShelf(Book book) async {
+    // 同一ISBNの蔵書が既にある場合は重複登録しない（重複整理画面へ誘導）。
+    final isbnKey = DuplicateBookService.normalizeIsbn(book.isbn);
+    if (isbnKey.isNotEmpty &&
+        _books.any(
+          (existing) =>
+              DuplicateBookService.normalizeIsbn(existing.isbn) == isbnKey,
+        )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('「${book.title}」は既に本棚に登録されています')),
+      );
+      return;
+    }
+
     final uuid = _generateUuid();
     final newBook = Book(
       id: uuid,
@@ -549,6 +564,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
         children: [
           _buildSearchSection(),
           Divider(),
+          if (DuplicateBookService.findGroups(_books).isNotEmpty)
+            _buildDuplicateBanner(),
           LibraryFilterBar(
             query: _query,
             totalCount: _books.length,
@@ -568,6 +585,44 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   /// 検索・絞り込み・並び替えを適用した表示用リスト。
   List<Book> get _visibleBooks =>
       LibraryQueryService.apply(_books, _query);
+
+  /// 重複した蔵書の整理画面を開く。
+  Future<void> _openDuplicateBooks() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DuplicateBooksScreen(
+          repository: widget.repository,
+          noteRepository: widget.noteRepository,
+          reviewRepository: widget.reviewRepository,
+        ),
+      ),
+    );
+    await _loadBooks();
+  }
+
+  /// 重複蔵書のバナー（_books から毎 build 再計算する）。
+  Widget _buildDuplicateBanner() {
+    final groups = DuplicateBookService.findGroups(_books);
+    return Material(
+      key: AppKeys.duplicateBanner,
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(
+          children: [
+            const Icon(Icons.library_books_outlined, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(DuplicateBookService.summaryLabel(groups))),
+            TextButton(
+              key: AppKeys.duplicateOpenButton,
+              onPressed: _openDuplicateBooks,
+              child: const Text('整理する'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildSearchSection() {
     return Padding(
