@@ -328,17 +328,11 @@ class _DuplicateBooksScreenState extends State<DuplicateBooksScreen> {
                 ],
               ),
             ),
-            RadioGroup<String>(
-              groupValue: selectedId,
-              onChanged: (value) {
-                if (value == null) return;
-                _select(group, value);
-              },
-              child: Column(
-                children: [
-                  for (final book in group.books) _buildBookRadio(book),
-                ],
-              ),
+            Column(
+              children: [
+                for (final book in group.books)
+                  _buildBookRadio(book, selectedId, group),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -358,10 +352,23 @@ class _DuplicateBooksScreenState extends State<DuplicateBooksScreen> {
     );
   }
 
-  Widget _buildBookRadio(Book book) {
+  Widget _buildBookRadio(
+    Book book,
+    String selectedId,
+    DuplicateBookGroup group,
+  ) {
     return RadioListTile<String>(
       key: AppKeys.duplicateKeepRadio(book.id),
       value: book.id,
+      // CI の Flutter 3.27.4 でも動くよう、groupValue/onChanged 方式を使う
+      // （3.32 以降の RadioGroup 祖先は旧SDKに存在しない）。
+      // ignore: deprecated_member_use
+      groupValue: selectedId,
+      // ignore: deprecated_member_use
+      onChanged: (value) {
+        if (value == null) return;
+        _select(group, value);
+      },
       title: Text(book.title),
       subtitle: Text(
         '追加: ${_formatDate(book.addedAt)}'
