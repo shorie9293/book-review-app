@@ -360,8 +360,8 @@ class _DuplicateBooksScreenState extends State<DuplicateBooksScreen> {
     return RadioListTile<String>(
       key: AppKeys.duplicateKeepRadio(book.id),
       value: book.id,
-      // CI の Flutter 3.27.4 でも動くよう、groupValue/onChanged 方式を使う
-      // （3.32 以降の RadioGroup 祖先は旧SDKに存在しない）。
+      // groupValue/onChanged は 3.32 以降 deprecated（RadioGroup 推奨）。
+      // 他所現世との共通コード維持のため当面この方式を残し、警告は抑制する。
       // ignore: deprecated_member_use
       groupValue: selectedId,
       // ignore: deprecated_member_use

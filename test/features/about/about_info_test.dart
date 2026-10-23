@@ -49,7 +49,7 @@ void main() {
       expect(kAboutInfo.appName, '読書レビュー');
       expect(kAboutInfo.contactEmail, 'horie.shunta@gmail.com');
       expect(kAboutInfo.privacyPolicyUrl, 'https://yoppala.in/privacy');
-      expect(kAboutInfo.version, '1.0.32');
+      expect(kAboutInfo.version, '1.0.33');
       expect(kAboutInfo.tagline, isNotEmpty);
     });
   });
