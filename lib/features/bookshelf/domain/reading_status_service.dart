@@ -28,15 +28,15 @@ abstract class ReadingStatusService {
   /// 現在ページを更新する（読書中状態を維持、負値は 0 にクランプ）。
   ///
   /// [page] が本の総ページ [pageCount] 以上なら読了扱いに遷移し、
-  /// 読了日時を記録する。
-  static Book updateProgress(Book book, int page) {
+  /// 読了日時を記録する。[now] は試練の決定論化用（未指定なら実時計）。
+  static Book updateProgress(Book book, int page, {DateTime? now}) {
     final clamped = page < 0 ? 0 : page;
     final pageCount = book.pageCount;
     if (pageCount != null && clamped >= pageCount) {
       return book.copyWith(
         readingStatus: ReadingStatus.finished,
         currentPage: pageCount,
-        finishedAt: DateTime.now(),
+        finishedAt: now ?? DateTime.now(),
       );
     }
     return book.copyWith(

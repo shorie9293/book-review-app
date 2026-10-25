@@ -4,6 +4,9 @@ import 'package:book_review_app/features/review/data/hive_review_repository.dart
 import 'package:book_review_app/features/notes/data/hive_book_note_repository.dart';
 import 'package:book_review_app/features/queue/data/hive_reading_queue_repository.dart';
 import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
+import 'package:book_review_app/features/crossapp/data/book_reward_export_coordinator.dart';
+import 'package:book_review_app/features/crossapp/data/cross_app_link_repository.dart';
+import 'package:book_review_app/features/crossapp/data/reward_export_log_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/bookshelf_screen.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
@@ -49,6 +52,22 @@ class _MainScreenState extends State<MainScreen> {
   final HiveReadingQueueRepository _queueRepository =
       HiveReadingQueueRepository();
   final HiveBookLoanRepository _loanRepository = HiveBookLoanRepository();
+
+  /// クロスアプリ連携の userId 保管庫（初回アクセス時に uuid を採番）
+  final HiveCrossAppLinkRepository _crossAppLinkRepository =
+      const HiveCrossAppLinkRepository();
+
+  /// 書き出し済み読了イベントの記録（冪等キー）
+  final HiveRewardExportLogRepository _crossAppRewardLogRepository =
+      const HiveRewardExportLogRepository();
+
+  /// 読了イベント書き出しの調整役
+  late final BookRewardExportCoordinator _rewardExportCoordinator =
+      BookRewardExportCoordinator(
+    linkRepository: _crossAppLinkRepository,
+    logRepository: _crossAppRewardLogRepository,
+  );
+
   bool _initialized = false;
 
   @override
@@ -88,6 +107,9 @@ class _MainScreenState extends State<MainScreen> {
       noteRepository: _noteRepository,
       queueRepository: _queueRepository,
       loanRepository: _loanRepository,
+      crossAppLinkRepository: _crossAppLinkRepository,
+      crossAppRewardLogRepository: _crossAppRewardLogRepository,
+      rewardExportCoordinator: _rewardExportCoordinator,
       textScale: widget.textScale,
       onScaleChanged: widget.onScaleChanged,
       themeMode: widget.themeMode,

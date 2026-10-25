@@ -10,6 +10,7 @@ import 'package:book_review_app/features/bookshelf/domain/reading_status_service
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
+import 'package:book_review_app/features/crossapp/data/book_reward_export_coordinator.dart';
 import 'package:book_review_app/features/locations/domain/shelf_location_service.dart';
 import 'package:book_review_app/features/loan/data/loan_due_reminder_repository.dart';
 import 'package:book_review_app/features/loan/domain/book_loan_service.dart';
@@ -183,6 +184,9 @@ class BookDetailScreen extends StatefulWidget {
   /// 現在日時の注入（試練の決定論化用）。未指定なら実時計。
   final DateTime? nowOverride;
 
+  /// 読了イベント書き出しの調整役（未指定なら書き出さない）
+  final BookRewardExportCoordinator? rewardExportCoordinator;
+
   const BookDetailScreen({
     super.key,
     required this.book,
@@ -191,6 +195,7 @@ class BookDetailScreen extends StatefulWidget {
     this.noteRepository,
     this.loanRepository,
     this.nowOverride,
+    this.rewardExportCoordinator,
   });
 
   @override
@@ -536,7 +541,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   }
                   Navigator.of(dialogContext).pop(
                       ReadingStatusService.updateProgress(
-                          _book ?? widget.book, page));
+                          _book ?? widget.book, page,
+                          now: widget.nowOverride));
                 },
                 child: const Text('保存'),
               ),
@@ -546,7 +552,31 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       },
     );
     if (saved == null || !mounted) return;
+    // 保存前の本（読了遷移の判定に使う）
+    final previous = _book ?? widget.book;
     await widget.bookRepository.updateBook(saved);
+
+    // 読了遷移ならクロスアプリ向けイベントを書き出す。
+    // 連携の失敗で蔵書詳細の操作を壊さないよう、ここで握りつぶす。
+    final coordinator = widget.rewardExportCoordinator;
+    if (coordinator != null) {
+      try {
+        // リポジトリの一覧は保存前の状態なので、この本だけ保存後へ差し替えて渡す
+        //（そのまま渡すと読了冊数が今回の読了を数え落とす）。
+        final stored = await widget.bookRepository.getBooks();
+        final allBooks = <Book>[
+          for (final b in stored) if (b.id == saved.id) saved else b,
+        ];
+        await coordinator.exportCompletion(
+          previous: previous,
+          updated: saved,
+          allBooks: allBooks,
+        );
+      } catch (_) {
+        // best-effort
+      }
+    }
+
     if (!mounted) return;
     setState(() {
       _book = saved;

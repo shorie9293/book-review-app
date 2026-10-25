@@ -8,6 +8,9 @@ import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/presentation/backup_screen.dart';
+import 'package:book_review_app/features/crossapp/data/book_reward_export_coordinator.dart';
+import 'package:book_review_app/features/crossapp/data/cross_app_link_repository.dart';
+import 'package:book_review_app/features/crossapp/data/reward_export_log_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
@@ -57,6 +60,15 @@ class BookshelfScreen extends StatefulWidget {
   /// 読書時間画面のリポジトリ（未指定なら Hive 実装を使う・試練用差し替え口）
   final ReadingSessionRepository? readingSessionRepositoryOverride;
 
+  /// クロスアプリ連携の userId 保管庫（未指定ならバックアップ画面に導線を出さない）
+  final CrossAppLinkRepository? crossAppLinkRepository;
+
+  /// クロスアプリ連携の送信済みイベント記録（バックアップ画面へ渡すだけ）
+  final RewardExportLogRepository? crossAppRewardLogRepository;
+
+  /// 読了イベント書き出しの調整役（未指定なら書き出さない）
+  final BookRewardExportCoordinator? rewardExportCoordinator;
+
   /// 現在の文字サイズ倍率（設定画面へ渡す）
   final double textScale;
 
@@ -85,6 +97,9 @@ class BookshelfScreen extends StatefulWidget {
     this.queueRepository,
     this.loanRepository,
     this.readingSessionRepositoryOverride,
+    this.crossAppLinkRepository,
+    this.crossAppRewardLogRepository,
+    this.rewardExportCoordinator,
     this.textScale = 1.0,
     this.onScaleChanged,
     this.themeMode = ThemeModeSetting.system,
@@ -292,6 +307,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             reviewRepository: widget.reviewRepository!,
             noteRepository: widget.noteRepository!,
           ),
+          crossAppLinkRepository: widget.crossAppLinkRepository,
+          crossAppRewardLogRepository: widget.crossAppRewardLogRepository,
         ),
       ),
     );
@@ -823,6 +840,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           reviewRepository: widget.reviewRepository!,
           noteRepository: widget.noteRepository,
           loanRepository: widget.loanRepository,
+          rewardExportCoordinator: widget.rewardExportCoordinator,
         ),
       ),
     );
@@ -831,6 +849,27 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   /// 読書状態を更新し保存する
   Future<void> _updateReadingStatus(Book book, Book updated) async {
     await widget.repository.updateBook(updated);
+
+    // 読了遷移ならクロスアプリ向けイベントを書き出す。
+    // 連携の失敗で本棚の操作を壊さないよう、ここで握りつぶす。
+    final coordinator = widget.rewardExportCoordinator;
+    if (coordinator != null) {
+      try {
+        // 画面上の一覧は更新前の状態なので、この本だけ更新後へ差し替えて渡す
+        // （そのまま渡すと読了冊数が今回の読了を数え落とす）。
+        final allBooks = <Book>[
+          for (final b in _books) if (b.id == updated.id) updated else b,
+        ];
+        await coordinator.exportCompletion(
+          previous: book,
+          updated: updated,
+          allBooks: allBooks,
+        );
+      } catch (_) {
+        // best-effort
+      }
+    }
+
     await _loadBooks();
   }
 

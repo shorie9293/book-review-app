@@ -5,6 +5,10 @@ import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/domain/backup_models.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
 import 'package:book_review_app/features/backup/presentation/backup_keys.dart';
+import 'package:book_review_app/features/crossapp/data/cross_app_link_repository.dart';
+import 'package:book_review_app/features/crossapp/data/reward_export_log_repository.dart';
+import 'package:book_review_app/features/crossapp/presentation/cross_app_link_keys.dart';
+import 'package:book_review_app/features/crossapp/presentation/cross_app_link_screen.dart';
 
 /// エクスポート／バックアップ画面。
 ///
@@ -20,11 +24,19 @@ class BackupScreen extends StatefulWidget {
   /// クリップボード書き込み口（試練ではインメモリ実装を注入する）
   final Future<void> Function(String value) clipboardWriter;
 
+  /// クロスアプリ連携の userId 保管庫（未指定なら連携画面への導線を出さない）
+  final CrossAppLinkRepository? crossAppLinkRepository;
+
+  /// クロスアプリ連携の送信済みイベント記録（未指定なら件数行を出さない）
+  final RewardExportLogRepository? crossAppRewardLogRepository;
+
   const BackupScreen({
     super.key,
     required this.repository,
     this.service = const BackupService(),
     this.clipboardWriter = _defaultClipboardWriter,
+    this.crossAppLinkRepository,
+    this.crossAppRewardLogRepository,
   });
 
   static Future<void> _defaultClipboardWriter(String value) {
@@ -196,44 +208,74 @@ class _BackupScreenState extends State<BackupScreen> {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    final children = <Widget>[];
     if (_loadError != null) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              _loadError!,
-              key: BackupKeys.errorText,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _reload,
-              child: const Text('再読み込み'),
-            ),
-          ],
+      children.addAll([
+        Text(
+          _loadError!,
+          key: BackupKeys.errorText,
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
         ),
-      );
+        const SizedBox(height: 12),
+        ElevatedButton(
+          onPressed: _reload,
+          child: const Text('再読み込み'),
+        ),
+      ]);
+    } else {
+      final bundle = _bundle;
+      if (bundle == null) {
+        children.add(const Center(child: Text('データがありません')));
+      } else {
+        children.addAll([
+          _buildSummaryCard(bundle),
+          const SizedBox(height: 16),
+          _buildExportSection(),
+          const Divider(height: 32),
+          _buildRestoreSection(),
+        ]);
+      }
     }
 
-    final bundle = _bundle;
-    if (bundle == null) {
-      return const Center(child: Text('データがありません'));
+    final crossAppLinkRepository = widget.crossAppLinkRepository;
+    if (crossAppLinkRepository != null) {
+      children.addAll([
+        const Divider(height: 32),
+        _buildCrossAppLinkSection(crossAppLinkRepository),
+      ]);
     }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSummaryCard(bundle),
-          const SizedBox(height: 16),
-          _buildExportSection(),
-          const Divider(height: 32),
-          _buildRestoreSection(),
-        ],
+        children: children,
+      ),
+    );
+  }
+
+  /// クロスアプリ連携画面への導線。
+  Widget _buildCrossAppLinkSection(CrossAppLinkRepository linkRepository) {
+    return ListTile(
+      key: CrossAppLinkKeys.entry,
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.link),
+      title: const Text('クロスアプリ連携'),
+      subtitle: const Text('読み終えた本を rpg-task のコイン・EXP・称号に反映する'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => _openCrossAppLink(linkRepository),
+    );
+  }
+
+  /// クロスアプリ連携画面を開く。
+  Future<void> _openCrossAppLink(CrossAppLinkRepository linkRepository) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CrossAppLinkScreen(
+          linkRepository: linkRepository,
+          logRepository: widget.crossAppRewardLogRepository,
+        ),
       ),
     );
   }
