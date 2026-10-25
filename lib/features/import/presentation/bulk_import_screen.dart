@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/book_search_service.dart';
+import 'package:book_review_app/features/import/data/import_history_repository.dart';
 import 'package:book_review_app/features/import/domain/bulk_import_parser.dart';
 import 'package:book_review_app/features/import/domain/bulk_import_service.dart';
+import 'package:book_review_app/features/import/domain/import_history_entry.dart';
+import 'package:book_review_app/features/import/domain/import_history_service.dart';
+import 'package:book_review_app/features/import/presentation/import_history_screen.dart';
 import 'package:book_review_app/features/import/presentation/viewmodel/bulk_import_view_model.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart';
 
@@ -17,11 +21,19 @@ class BulkImportScreen extends StatefulWidget {
   /// 取り込み完了時に呼ばれる（本棚の再読み込みなどに使用）。
   final VoidCallback? onImported;
 
+  /// 取込履歴の保存先。null なら履歴を記録せず、履歴ボタンも表示しない。
+  final ImportHistoryRepository? historyRepository;
+
+  /// 現在時刻の取得関数（試練で固定値を注入可能）
+  final DateTime Function()? clock;
+
   const BulkImportScreen({
     super.key,
     required this.repository,
     required this.searchService,
     this.onImported,
+    this.historyRepository,
+    this.clock,
   });
 
   @override
@@ -55,14 +67,55 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
       repository: widget.repository,
       searchService: widget.searchService,
     );
-    if (!mounted) return;
     final report = _viewModel.report;
+    if (report != null) {
+      await _recordHistory(report);
+    }
+    if (!mounted) return;
     if (report != null) {
       widget.onImported?.call();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${report.addedCount}冊を本棚に追加しました')),
       );
     }
+  }
+
+  static int _historySequence = 0;
+
+  /// 取込結果を履歴へ追記する。失敗しても取込自体の成否には影響させない。
+  Future<void> _recordHistory(BulkImportReport report) async {
+    final repository = widget.historyRepository;
+    if (repository == null) return;
+    if (report.isEmpty) return;
+    try {
+      final entries = await repository.load();
+      final now = (widget.clock ?? DateTime.now)();
+      _historySequence++;
+      final id =
+          '${now.microsecondsSinceEpoch}-$_historySequence-${DateTime.now().microsecondsSinceEpoch}';
+      final entry = buildImportHistoryEntry(
+        report: report,
+        mode: _viewModel.mode.label,
+        id: id,
+        importedAt: now,
+      );
+      await repository.save(ImportHistoryService.append(entries, entry));
+    } catch (_) {
+      // 履歴の保存失敗は握り潰す（取込は成功のまま）
+    }
+  }
+
+  void _openHistory() {
+    final repository = widget.historyRepository;
+    if (repository == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ImportHistoryScreen(
+          repository: repository,
+          clock: widget.clock,
+        ),
+      ),
+    );
   }
 
   @override
@@ -75,6 +128,13 @@ class _BulkImportScreenState extends State<BulkImportScreen> {
       appBar: AppBar(
         title: const Text('蔵書の一括インポート'),
         actions: [
+          if (widget.historyRepository != null)
+            IconButton(
+              key: const Key('bulk_import_history_button'),
+              icon: const Icon(Icons.history),
+              tooltip: '取込履歴',
+              onPressed: _openHistory,
+            ),
           IconButton(
             key: const Key('bulk_import_reset_button'),
             icon: const Icon(Icons.refresh),
