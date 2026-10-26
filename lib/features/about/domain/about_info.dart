@@ -45,6 +45,6 @@ const kAboutInfo = AboutInfo._(
   appName: '読書レビュー',
   version: '1.0.35',
   contactEmail: 'horie.shunta@gmail.com',
-  privacyPolicyUrl: 'https://yoppala.in/privacy',
+  privacyPolicyUrl: 'https://www.yoppala.in/privacy',
   tagline: '読書の記録とレビューで、学びを明日の力に。',
 );
