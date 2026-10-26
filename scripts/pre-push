@@ -1,0 +1,30 @@
+#!/bin/bash
+# ⛩️ Pre-push quality gate — 八百万の掟：push前にCIエラーを撲滅せよ
+# CI(.github/workflows/flutter-ci.yml) と同一の2ゲートをローカルで再現する。
+# 追跡下の正本。設置は `bash scripts/install-git-hooks.sh` で行う。
+#
+# 環境変数:
+#   PRE_PUSH_TEST_TARGET  テスト対象パス（既定: test = 全量）。負の対照用フック。
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+export PATH="/tmp/flutter/bin:$PATH"
+# CI は UTC で走る。JST 前提の時限爆弾をローカルで検出するため固定する。
+export TZ=UTC
+
+# GATE 1: flutter analyze (warnings = failure, infos = 非致命)
+echo "⛩️ Gate 1/2: flutter analyze..."
+flutter analyze --no-fatal-infos
+echo "✅ flutter analyze: OK"
+
+# GATE 2: flutter test (any failure = rejection)
+echo ""
+TARGET="${PRE_PUSH_TEST_TARGET:-test}"
+echo "⛩️ Gate 2/2: flutter test ($TARGET)..."
+flutter test --no-pub --reporter compact "$TARGET"
+echo "✅ flutter test: ALL PASSED"
+
+echo ""
+echo "⛩️ 全ゲート突破 — push許可"
