@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/features/reminder/data/quiet_hours_repository.dart';
 import 'package:book_review_app/features/reminder/data/reading_reminder_repository.dart';
 import 'package:book_review_app/features/reminder/domain/reading_reminder_schedule_service.dart';
 import 'package:book_review_app/features/reminder/domain/reading_reminder_settings.dart';
 import 'package:book_review_app/features/reminder/infrastructure/reading_reminder_scheduler.dart';
+import 'package:book_review_app/features/reminder/presentation/quiet_hours_settings_screen.dart';
+import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 /// 読書リマインダーの設定画面。
 class ReadingReminderSettingsScreen extends StatefulWidget {
@@ -12,13 +15,19 @@ class ReadingReminderSettingsScreen extends StatefulWidget {
     ReadingReminderRepository? repository,
     ReadingReminderScheduler? scheduler,
     DateTime Function()? now,
+    QuietHoursRepository? quietHoursRepository,
   })  : _repository = repository,
         _scheduler = scheduler,
-        _now = now;
+        _now = now,
+        _quietHoursRepository = quietHoursRepository;
 
   final ReadingReminderRepository? _repository;
   final ReadingReminderScheduler? _scheduler;
   final DateTime Function()? _now;
+
+  /// 静穏時間設定の永続化。未注入なら静穏時間への導線を出さない
+  /// （既存の呼び出し・試練の挙動を変えないため）。
+  final QuietHoursRepository? _quietHoursRepository;
 
   @override
   State<ReadingReminderSettingsScreen> createState() =>
@@ -101,6 +110,18 @@ class _ReadingReminderSettingsScreenState
                   ],
                 ),
                 const SizedBox(height: 8),
+                if (widget._quietHoursRepository != null)
+                  SemanticHelper.interactive(
+                    testId: 'quiet_hours_entry',
+                    label: '静穏時間（おやすみモード）の設定を開く',
+                    child: ListTile(
+                      key: AppKeys.quietHoursEntry,
+                      title: const Text('静穏時間（おやすみモード）'),
+                      subtitle: const Text('夜間の通知を抑止・翌朝へ繰り延べ'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _openQuietHours,
+                    ),
+                  ),
                 ListTile(
                   title: const Text('次回の通知'),
                   subtitle: Text(
@@ -152,6 +173,16 @@ class _ReadingReminderSettingsScreenState
     }
     final sorted = set.toList()..sort();
     setState(() => _settings = _settings.copyWith(weekdays: sorted));
+  }
+
+  void _openQuietHours() {
+    final repository = widget._quietHoursRepository;
+    if (repository == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => QuietHoursSettingsScreen(repository: repository),
+      ),
+    );
   }
 
   Future<void> _pickTime() async {

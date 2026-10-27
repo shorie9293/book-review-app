@@ -3,11 +3,23 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:book_review_app/features/reminder/domain/quiet_hours_service.dart';
+import 'package:book_review_app/features/reminder/infrastructure/quiet_hours_guard_wiring.dart';
+
 /// 読書リマインダー用のローカル通知ラッパー。
 ///
 /// プラットフォームチャネル呼出は全て try/catch で包み、
 /// 失敗しても例外を投げない（MissingPluginException 対策）。
+///
+/// 送出時刻は [QuietHoursGuard] を通す（静穏時間中は繰延 or 送出中止）。
+/// guard を省略した場合は [QuietHoursGuardWiring.create] が使われるため、
+/// 設定画面で保存した静穏時間設定が本番経路へそのまま反映される。
 class BookNotificationService {
+  BookNotificationService({QuietHoursGuard? guard})
+      : _guard = guard ?? QuietHoursGuardWiring.create();
+
+  final QuietHoursGuard _guard;
+
   static const int _reminderBaseId = 200; // 通知ID = 200 + weekday(1..7)
   static const int _testNotificationId = 999;
   static const String _channelId = 'book_reading';
@@ -112,11 +124,17 @@ class BookNotificationService {
           continue;
         }
         final scheduledDate = _nextInstanceOfWeekday(weekday, hour, minute);
+        final delivery = await _applyQuietHours(scheduledDate);
+        if (delivery == null) {
+          // 静穏時間 policy=skip: この曜日は送出しない。
+          await _plugin.cancel(id);
+          continue;
+        }
         await _plugin.zonedSchedule(
           id,
           '📖 読書の刻',
           '積ん読の本を開く刻だ。',
-          scheduledDate,
+          delivery,
           const NotificationDetails(
             android: AndroidNotificationDetails(
               _channelId,
@@ -159,11 +177,17 @@ class BookNotificationService {
   }) async {
     try {
       final scheduleMode = await _getScheduleMode();
+      final delivery = await _applyQuietHours(_nextInstanceOfTime(hour, minute));
+      if (delivery == null) {
+        // 静穏時間 policy=skip: 送出しない（既存登録も解除する）。
+        await _plugin.cancel(_loanDueBaseId);
+        return;
+      }
       await _plugin.zonedSchedule(
         _loanDueBaseId,
         '📚 返却期限のお知らせ',
         body,
-        _nextInstanceOfTime(hour, minute),
+        delivery,
         const NotificationDetails(
           android: AndroidNotificationDetails(
             _loanChannelId,
@@ -214,6 +238,20 @@ class BookNotificationService {
       );
     } catch (e) {
       debugPrint('[BookNotificationService] sendTestNotification 失敗: $e');
+    }
+  }
+
+  /// 静穏時間ガードを通した送出時刻を返す。null は「送出しない」。
+  ///
+  /// ガード自体の失敗は通知を止めない（従来どおりの時刻へフォールバック）。
+  Future<tz.TZDateTime?> _applyQuietHours(tz.TZDateTime scheduled) async {
+    try {
+      final adjusted = await _guard.adjust(scheduled);
+      if (adjusted == null) return null;
+      return tz.TZDateTime.from(adjusted, tz.local);
+    } catch (e) {
+      debugPrint('[BookNotificationService] 静穏時間ガード失敗: $e');
+      return scheduled;
     }
   }
 

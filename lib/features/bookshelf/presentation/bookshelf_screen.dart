@@ -30,6 +30,7 @@ import 'package:book_review_app/features/notes/presentation/favorite_notes_scree
 import 'package:book_review_app/features/reading/data/reading_session_repository.dart';
 import 'package:book_review_app/features/reading/presentation/reading_session_screen.dart';
 import 'package:book_review_app/features/recommendation/presentation/recommendation_screen.dart';
+import 'package:book_review_app/features/reminder/infrastructure/hive_quiet_hours_repository.dart';
 import 'package:book_review_app/features/reminder/presentation/reading_reminder_settings_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
@@ -527,7 +528,10 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
               tooltip: '読書リマインダー',
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const ReadingReminderSettingsScreen(),
+                  builder: (_) => ReadingReminderSettingsScreen(
+                    // 静穏時間（おやすみモード）への導線を出すため本番実装を注入。
+                    quietHoursRepository: HiveQuietHoursRepository(),
+                  ),
                 ),
               ),
             ),

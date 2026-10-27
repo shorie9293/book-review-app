@@ -231,6 +231,37 @@ class AppKeys {
   static Key readingReminderWeekdayChip(int weekday) =>
       Key('reading_reminder_weekday_$weekday');
 
+  /// 静穏時間（おやすみモード）設定画面（Scaffold）
+  static const Key quietHoursScreen = Key('quiet_hours_screen');
+
+  /// 静穏時間設定画面への導線（読書リマインダー設定画面）
+  static const Key quietHoursEntry = Key('quiet_hours_entry');
+
+  /// 静穏時間: 有効スイッチ
+  static const Key quietHoursToggle = Key('quiet_hours_toggle');
+
+  /// 静穏時間: 開始時刻の「時」
+  static const Key quietHoursStartHour = Key('quiet_hours_start_hour');
+
+  /// 静穏時間: 開始時刻の「分」
+  static const Key quietHoursStartMinute = Key('quiet_hours_start_minute');
+
+  /// 静穏時間: 終了時刻の「時」
+  static const Key quietHoursEndHour = Key('quiet_hours_end_hour');
+
+  /// 静穏時間: 終了時刻の「分」
+  static const Key quietHoursEndMinute = Key('quiet_hours_end_minute');
+
+  /// 静穏時間: 静穏時間中の通知方針ラジオ（policy.storageKey を指定）
+  static Key quietHoursPolicyRadio(String storageKey) =>
+      Key('quiet_hours_policy_$storageKey');
+
+  /// 静穏時間: 設定内容のプレビュー文言
+  static const Key quietHoursPreview = Key('quiet_hours_preview');
+
+  /// 静穏時間: 保存ボタン
+  static const Key quietHoursSaveButton = Key('quiet_hours_save_button');
+
   /// 読書統計グラフ画面（Scaffold）
   static const Key readingTrendScreen = Key('reading_trend_screen');
 
