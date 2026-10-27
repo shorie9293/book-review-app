@@ -15,7 +15,14 @@ void main() {
 
   Future<void> pump(WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: AboutScreen(info: info)),
+      MaterialApp(
+        home: AboutScreen(
+          info: info,
+          // 外部遷移の既定実装は端末プラグインに触れるため、試練では
+          // 常に失敗するフェイクを注入してコピー導線側を検証する。
+          urlOpener: (_) async => false,
+        ),
+      ),
     );
   }
 
@@ -49,6 +56,7 @@ void main() {
         home: AboutScreen(
           info: info,
           clipboardWriter: (value) async => copied.add(value),
+          urlOpener: (_) async => false,
         ),
       ),
     );
@@ -67,6 +75,7 @@ void main() {
         home: AboutScreen(
           info: info,
           clipboardWriter: (value) async => throw StateError('clipboard'),
+          urlOpener: (_) async => false,
         ),
       ),
     );

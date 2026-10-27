@@ -2,22 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../domain/about_info.dart';
+import '../domain/external_url_opener.dart';
 import 'about_app_keys.dart';
+import 'external_url_launcher.dart';
 
 /// 「アプリについて」画面。
 ///
 /// アプリ名・バージョン、OSSライセンス、プライバシーポリシー、
-/// 問い合わせ先を提示する。外部依存は追加しない（URLは表示＋コピーのみ）。
+/// 問い合わせ先を提示する。プライバシーポリシーと問い合わせは
+/// タップで外部アプリ（ブラウザ・メール）へ渡し、開けなかった場合は
+/// 従来のコピー導線（URL表示＋クリップボード）へ退避する。
 class AboutScreen extends StatelessWidget {
   final AboutInfo info;
 
   /// クリップボード書き込み口（試練ではインメモリ実装を注入する）。
   final Future<void> Function(String value) clipboardWriter;
 
+  /// 外部URLを開く口（試練ではフェイクを注入する）。
+  final ExternalUrlOpener urlOpener;
+
   const AboutScreen({
     super.key,
     this.info = kAboutInfo,
     this.clipboardWriter = _defaultClipboardWriter,
+    this.urlOpener = launchExternalUrl,
   });
 
   static Future<void> _defaultClipboardWriter(String value) {
@@ -69,8 +77,9 @@ class AboutScreen extends StatelessWidget {
                   leading: const Icon(Icons.privacy_tip_outlined),
                   title: const Text('プライバシーポリシー'),
                   subtitle: Text(info.privacyPolicyUrl),
-                  onTap: () => _showCopyDialog(
+                  onTap: () => _openOrCopy(
                     context,
+                    uri: externalUri(info.privacyPolicyUrl),
                     title: 'プライバシーポリシー',
                     body: '以下のURLでプライバシーポリシーを確認できます。',
                     value: info.privacyPolicyUrl,
@@ -83,8 +92,9 @@ class AboutScreen extends StatelessWidget {
                   leading: const Icon(Icons.mail_outline),
                   title: const Text('問い合わせ'),
                   subtitle: Text(info.contactEmail),
-                  onTap: () => _showCopyDialog(
+                  onTap: () => _openOrCopy(
                     context,
+                    uri: mailtoUri(info.contactEmail),
                     title: '問い合わせ',
                     body: '下記メールアドレスまでご連絡ください。',
                     value: info.contactEmail,
@@ -96,6 +106,33 @@ class AboutScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// 外部アプリで開く。開けなければ（false・例外）コピー導線へ退避する。
+  Future<void> _openOrCopy(
+    BuildContext context, {
+    required Uri? uri,
+    required String title,
+    required String body,
+    required String value,
+    required String label,
+  }) async {
+    var opened = false;
+    if (uri != null) {
+      try {
+        opened = await urlOpener(uri);
+      } catch (_) {
+        opened = false;
+      }
+    }
+    if (opened || !context.mounted) return;
+    await _showCopyDialog(
+      context,
+      title: title,
+      body: body,
+      value: value,
+      label: label,
     );
   }
 
