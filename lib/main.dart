@@ -11,7 +11,13 @@ import 'package:book_review_app/core/theme/text_scale_setting.dart';
 import 'package:book_review_app/core/theme/reduce_motion_repository.dart';
 import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart';
+import 'package:book_review_app/features/auto_backup/data/auto_backup_bootstrap.dart';
+import 'package:book_review_app/features/backup/data/backup_repository.dart';
+import 'package:book_review_app/features/backup/domain/backup_service.dart';
+import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
+import 'package:book_review_app/features/notes/data/hive_book_note_repository.dart';
+import 'package:book_review_app/features/review/data/hive_review_repository.dart';
 import 'package:book_review_app/features/reminder/infrastructure/notification_service.dart';
 import 'package:book_review_app/features/reminder/presentation/notification_tap_router.dart';
 import 'package:book_review_app/features/tutorial/data/tutorial_repository.dart';
@@ -34,7 +40,30 @@ void main() async {
   final notificationService = BookNotificationService();
   unawaited(notificationService.initialize());
 
+  // 起動時1日1回の自動バックアップ（世代3）。起動は待たせない。
+  scheduleAutoBackup(buildJson: _buildAutoBackupJson);
+
   runApp(MyApp(notificationTapRouter: tapRouter));
+}
+
+/// 自動バックアップ用の JSON を組み立てる。
+///
+/// 手動バックアップ画面と同じ [HiveBackupRepository] を束ね、
+/// [BackupService.exportJson] で整形する（画面側の実装は不変）。
+Future<String> _buildAutoBackupJson() async {
+  final bookRepository = HiveBookRepository();
+  final reviewRepository = HiveReviewRepository();
+  final noteRepository = HiveBookNoteRepository();
+  await bookRepository.init();
+  await reviewRepository.init();
+  await noteRepository.init();
+  final backupRepository = HiveBackupRepository(
+    bookRepository: bookRepository,
+    reviewRepository: reviewRepository,
+    noteRepository: noteRepository,
+  );
+  final bundle = await backupRepository.collect();
+  return const BackupService().exportJson(bundle);
 }
 
 class MyApp extends StatefulWidget {
