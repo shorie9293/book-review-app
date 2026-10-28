@@ -14,6 +14,7 @@ import 'package:book_review_app/features/crossapp/data/book_reward_export_coordi
 import 'package:book_review_app/features/locations/domain/shelf_location_service.dart';
 import 'package:book_review_app/features/loan/data/loan_due_reminder_repository.dart';
 import 'package:book_review_app/features/loan/domain/book_loan_service.dart';
+import 'package:book_review_app/features/loan/domain/loan_due_reminder_resync.dart';
 import 'package:book_review_app/features/loan/infrastructure/loan_due_reminder_scheduler.dart';
 import 'package:book_review_app/features/loan/presentation/loan_edit_dialog.dart';
 import 'package:book_review_app/features/loan/presentation/loan_management_screen.dart';
@@ -187,6 +188,9 @@ class BookDetailScreen extends StatefulWidget {
   /// 読了イベント書き出しの調整役（未指定なら書き出さない）
   final BookRewardExportCoordinator? rewardExportCoordinator;
 
+  /// 返却期限リマインダーの再計算窓口（未指定なら再計算しない）
+  final LoanDueReminderResync? reminderResync;
+
   const BookDetailScreen({
     super.key,
     required this.book,
@@ -196,6 +200,7 @@ class BookDetailScreen extends StatefulWidget {
     this.loanRepository,
     this.nowOverride,
     this.rewardExportCoordinator,
+    this.reminderResync,
   });
 
   @override
@@ -268,6 +273,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final current = await repository.loadLoans();
     await repository.saveLoans(BookLoanService.addLoan(current, loan));
     await _reloadLoans();
+    await widget.reminderResync?.trigger();
   }
 
   /// この本の未返却貸出を返却済みにして永続化する。
@@ -279,6 +285,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       BookLoanService.markReturned(current, loan.id, _loanNow),
     );
     await _reloadLoans();
+    await widget.reminderResync?.trigger();
   }
 
   /// 貸出中一覧画面を開く。

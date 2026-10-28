@@ -17,6 +17,7 @@ import 'package:book_review_app/features/bookshelf/presentation/library_filter_b
 import 'package:book_review_app/features/bookshelf/presentation/stagnant_books_screen.dart';
 import 'package:book_review_app/features/duplicates/domain/duplicate_book_service.dart';
 import 'package:book_review_app/features/duplicates/presentation/duplicate_books_screen.dart';
+import 'package:book_review_app/features/loan/domain/loan_due_reminder_resync.dart';
 import 'package:book_review_app/features/locations/domain/shelf_location_service.dart';
 import 'package:book_review_app/features/challenge/presentation/challenge_screen.dart';
 import 'package:book_review_app/features/goals/presentation/daily_reading_goal_screen.dart';
@@ -70,6 +71,9 @@ class BookshelfScreen extends StatefulWidget {
   /// 読了イベント書き出しの調整役（未指定なら書き出さない）
   final BookRewardExportCoordinator? rewardExportCoordinator;
 
+  /// 返却期限リマインダーの再計算窓口（蔵書詳細へ引き渡すだけ）
+  final LoanDueReminderResync? reminderResync;
+
   /// 現在の文字サイズ倍率（設定画面へ渡す）
   final double textScale;
 
@@ -101,6 +105,7 @@ class BookshelfScreen extends StatefulWidget {
     this.crossAppLinkRepository,
     this.crossAppRewardLogRepository,
     this.rewardExportCoordinator,
+    this.reminderResync,
     this.textScale = 1.0,
     this.onScaleChanged,
     this.themeMode = ThemeModeSetting.system,
@@ -845,6 +850,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           noteRepository: widget.noteRepository,
           loanRepository: widget.loanRepository,
           rewardExportCoordinator: widget.rewardExportCoordinator,
+          reminderResync: widget.reminderResync,
         ),
       ),
     );
