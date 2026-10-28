@@ -4,6 +4,15 @@ import 'package:flutter/material.dart';
 class AppKeys {
   const AppKeys._();
 
+  /// 設定ハブ画面（Scaffold）
+  static const Key settingsHubScreen = Key('settings_hub_screen');
+
+  /// 設定ハブ画面への導線（テーマ設定画面の先頭）
+  static const Key settingsHubEntry = Key('settings_hub_entry');
+
+  /// 設定ハブ: 指定項目の行（'appearance' / 'text_scale' / ... を指定）
+  static Key settingsHubItem(String id) => Key('settings_hub_item_$id');
+
   /// テーマ設定画面（Scaffold）
   static const Key themeModeScreen = Key('theme_mode_screen');
 
