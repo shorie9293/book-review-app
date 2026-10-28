@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:book_review_app/features/reminder/domain/notification_route_resolver.dart';
 import 'package:book_review_app/features/reminder/domain/quiet_hours_service.dart';
 import 'package:book_review_app/features/reminder/infrastructure/quiet_hours_guard_wiring.dart';
 
@@ -35,6 +36,65 @@ class BookNotificationService {
 
   bool _initialized = false;
 
+  /// 通知タップ時に呼ばれる遷移ハンドラ（未接続なら [pendingRoute] に保持）。
+  void Function(ResolvedNotificationRoute route)? onRouteSelected;
+
+  /// アプリ全体で共有する遷移ハンドラ（本番の router 接続用）。
+  static void Function(ResolvedNotificationRoute route)? _globalRouteHandler;
+
+  /// アプリ全体の保留 route（ハンドラ未接続時に保持）。
+  static ResolvedNotificationRoute? _globalPendingRoute;
+
+  ResolvedNotificationRoute? _pendingRoute;
+
+  /// 未処理のタップ遷移先（[consumePendingRoute] で取り出すまで保持）。
+  ResolvedNotificationRoute? get pendingRoute => _pendingRoute;
+
+  /// 保留中の遷移先を 1 度だけ取り出す。無ければ null。
+  ResolvedNotificationRoute? consumePendingRoute() {
+    final route = _pendingRoute;
+    _pendingRoute = null;
+    return route;
+  }
+
+  /// アプリ全体の遷移ハンドラを接続する（保留分は即座に流し込む）。
+  static void attachGlobalRouteHandler(
+    void Function(ResolvedNotificationRoute route)? handler,
+  ) {
+    _globalRouteHandler = handler;
+    final pending = _globalPendingRoute;
+    _globalPendingRoute = null;
+    if (pending != null && handler != null) handler(pending);
+  }
+
+  /// アプリ全体の保留遷移先を 1 度だけ取り出す。無ければ null。
+  static ResolvedNotificationRoute? consumeGlobalPendingRoute() {
+    final route = _globalPendingRoute;
+    _globalPendingRoute = null;
+    return route;
+  }
+
+  /// 通知 payload を解決し、接続済みハンドラへ渡す（未接続なら保持）。
+  ///
+  /// 未知 route・null・空・破損 payload では何もしない。
+  void handleNotificationPayload(String? payload) {
+    final route = NotificationRouteResolver.resolve(
+      payload,
+      allowedRoutes: NotificationRoutes.all,
+    );
+    if (route == null) return;
+
+    final handler = onRouteSelected ?? _globalRouteHandler;
+    if (handler != null) {
+      _pendingRoute = null;
+      _globalPendingRoute = null;
+      handler(route);
+      return;
+    }
+    _pendingRoute = route;
+    _globalPendingRoute = route;
+  }
+
   /// timezone 初期化＋tz.local 補正＋プラグイン初期化＋チャンネル作成。
   Future<void> initialize() async {
     if (_initialized) return;
@@ -58,11 +118,14 @@ class BookNotificationService {
         requestSoundPermission: true,
       );
       const settings = InitializationSettings(android: android, iOS: darwin);
-      await _plugin.initialize(settings);
+      await _plugin.initialize(
+        settings,
+        onDidReceiveNotificationResponse: (response) =>
+            handleNotificationPayload(response.payload),
+      );
 
-      final androidImpl = _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl != null) {
         await androidImpl.createNotificationChannel(
           const AndroidNotificationChannel(
@@ -76,6 +139,18 @@ class BookNotificationService {
         );
       }
       _initialized = true;
+
+      // 通知タップで起動された場合も、通常タップと同じ入口へ流す。
+      try {
+        final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+        if (launchDetails?.didNotificationLaunchApp ?? false) {
+          handleNotificationPayload(
+            launchDetails?.notificationResponse?.payload,
+          );
+        }
+      } catch (e) {
+        debugPrint('[BookNotificationService] 起動通知の取得失敗: $e');
+      }
     } catch (e) {
       debugPrint('[BookNotificationService] initialize 失敗: $e');
     }
@@ -84,9 +159,8 @@ class BookNotificationService {
   /// 通知権限を要求する。失敗時は false。
   Future<bool> requestPermission() async {
     try {
-      final androidImpl = _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl != null) {
         final granted = await androidImpl.requestNotificationsPermission();
         return granted ?? false;
@@ -149,6 +223,10 @@ class BookNotificationService {
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+          // タップ時に読書時間画面へ遷移させる（route: reading）。
+          payload: NotificationRouteResolver.buildPayload(
+            NotificationRoutes.reading,
+          ),
         );
       }
     } catch (e) {
@@ -177,7 +255,8 @@ class BookNotificationService {
   }) async {
     try {
       final scheduleMode = await _getScheduleMode();
-      final delivery = await _applyQuietHours(_nextInstanceOfTime(hour, minute));
+      final delivery =
+          await _applyQuietHours(_nextInstanceOfTime(hour, minute));
       if (delivery == null) {
         // 静穏時間 policy=skip: 送出しない（既存登録も解除する）。
         await _plugin.cancel(_loanDueBaseId);
@@ -202,10 +281,12 @@ class BookNotificationService {
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
+        // タップ時に貸出管理画面へ遷移させる（route: loans）。
+        payload:
+            NotificationRouteResolver.buildPayload(NotificationRoutes.loans),
       );
     } catch (e) {
-      debugPrint(
-          '[BookNotificationService] scheduleLoanDueReminder 失敗: $e');
+      debugPrint('[BookNotificationService] scheduleLoanDueReminder 失敗: $e');
     }
   }
 
@@ -258,9 +339,8 @@ class BookNotificationService {
   /// 正確アラーム権限があれば exact、なければ inexact へフォールバック。
   Future<AndroidScheduleMode> _getScheduleMode() async {
     try {
-      final androidImpl = _plugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl != null) {
         final canExact = await androidImpl
             .canScheduleExactNotifications()

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:book_review_app/core/infrastructure/app_lock_gate.dart';
@@ -9,6 +11,9 @@ import 'package:book_review_app/core/theme/text_scale_setting.dart';
 import 'package:book_review_app/core/theme/reduce_motion_repository.dart';
 import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart';
+import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
+import 'package:book_review_app/features/reminder/infrastructure/notification_service.dart';
+import 'package:book_review_app/features/reminder/presentation/notification_tap_router.dart';
 import 'package:book_review_app/features/tutorial/data/tutorial_repository.dart';
 import 'package:book_review_app/features/tutorial/presentation/tutorial_screen.dart';
 import 'package:book_review_app/screens/main_screen.dart';
@@ -16,11 +21,27 @@ import 'package:book_review_app/screens/main_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  runApp(const MyApp());
+
+  // 通知タップ → 該当画面遷移の配線。
+  // Navigator 構築前のタップは NotificationTapRouter 側で保留され、
+  // 最初のフレーム後に流し込まれる。
+  final loanRepository = HiveBookLoanRepository();
+  await loanRepository.init();
+  final tapRouter = NotificationTapRouter.forApp(
+    navigatorKey: GlobalKey<NavigatorState>(),
+    loanRepository: loanRepository,
+  );
+  final notificationService = BookNotificationService();
+  unawaited(notificationService.initialize());
+
+  runApp(MyApp(notificationTapRouter: tapRouter));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.notificationTapRouter});
+
+  /// 通知タップの遷移 router（null なら通知タップ配線なし）。
+  final NotificationTapRouter? notificationTapRouter;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -32,7 +53,8 @@ class _MyAppState extends State<MyApp> {
   ThemeModeSetting _themeMode = ThemeModeSetting.system;
   final ThemeModeRepository _themeModeRepo = const ThemeModeRepository();
   ReduceMotionSetting _reduceMotion = ReduceMotionSetting.system;
-  final ReduceMotionRepository _reduceMotionRepo = const ReduceMotionRepository();
+  final ReduceMotionRepository _reduceMotionRepo =
+      const ReduceMotionRepository();
 
   @override
   void initState() {
@@ -40,6 +62,20 @@ class _MyAppState extends State<MyApp> {
     _loadTextScale();
     _loadThemeMode();
     _loadReduceMotion();
+    _wireNotificationTaps();
+  }
+
+  /// 通知タップの遷移ハンドラを Navigator 構築後に接続する。
+  ///
+  /// 接続前に届いたタップ（起動経由を含む）は保留されており、
+  /// 接続時に同じ入口から流し込まれる。
+  void _wireNotificationTaps() {
+    final router = widget.notificationTapRouter;
+    if (router == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      BookNotificationService.attachGlobalRouteHandler(router.handle);
+    });
   }
 
   /// 保存された「動きを減らす」設定を読み込む（未保存はシステム従属）。
@@ -90,6 +126,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: widget.notificationTapRouter?.navigatorKey,
       title: 'book-review-app',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
