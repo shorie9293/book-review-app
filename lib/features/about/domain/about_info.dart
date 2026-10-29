@@ -43,7 +43,7 @@ class AboutInfo {
 /// 既定の「アプリについて」情報。
 const kAboutInfo = AboutInfo._(
   appName: '読書レビュー',
-  version: '1.0.39',
+  version: '1.0.40',
   contactEmail: 'horie.shunta@gmail.com',
   privacyPolicyUrl: 'https://www.yoppala.in/privacy',
   tagline: '読書の記録とレビューで、学びを明日の力に。',

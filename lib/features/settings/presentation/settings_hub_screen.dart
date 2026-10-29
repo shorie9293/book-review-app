@@ -12,6 +12,7 @@ import 'package:book_review_app/features/backup/presentation/backup_screen.dart'
 import 'package:book_review_app/features/reminder/data/quiet_hours_repository.dart';
 import 'package:book_review_app/features/reminder/infrastructure/hive_quiet_hours_repository.dart';
 import 'package:book_review_app/features/reminder/presentation/quiet_hours_settings_screen.dart';
+import 'package:book_review_app/features/reminder/infrastructure/notification_permission_requester.dart';
 import 'package:book_review_app/features/reminder/presentation/reading_reminder_settings_screen.dart';
 import 'package:book_review_app/screens/reduce_motion_settings_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
@@ -191,6 +192,9 @@ class SettingsHubScreen extends StatelessWidget {
             builder: readingReminderBuilder ??
                 (_) => ReadingReminderSettingsScreen(
                       quietHoursRepository: quietHoursRepo,
+                      // 通知権限の要求（Android 13+ は要求しないと通知が出ない）。
+                      permissionRequester:
+                          PlatformNotificationPermissionRequester(),
                     ),
           ),
           _item(

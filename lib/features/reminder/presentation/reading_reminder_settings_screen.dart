@@ -4,6 +4,7 @@ import 'package:book_review_app/features/reminder/data/quiet_hours_repository.da
 import 'package:book_review_app/features/reminder/data/reading_reminder_repository.dart';
 import 'package:book_review_app/features/reminder/domain/reading_reminder_schedule_service.dart';
 import 'package:book_review_app/features/reminder/domain/reading_reminder_settings.dart';
+import 'package:book_review_app/features/reminder/infrastructure/notification_permission_requester.dart';
 import 'package:book_review_app/features/reminder/infrastructure/reading_reminder_scheduler.dart';
 import 'package:book_review_app/features/reminder/presentation/quiet_hours_settings_screen.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
@@ -16,14 +17,19 @@ class ReadingReminderSettingsScreen extends StatefulWidget {
     ReadingReminderScheduler? scheduler,
     DateTime Function()? now,
     QuietHoursRepository? quietHoursRepository,
+    NotificationPermissionRequester? permissionRequester,
   })  : _repository = repository,
         _scheduler = scheduler,
         _now = now,
+        _permissionRequester = permissionRequester,
         _quietHoursRepository = quietHoursRepository;
 
   final ReadingReminderRepository? _repository;
   final ReadingReminderScheduler? _scheduler;
   final DateTime Function()? _now;
+
+  /// 通知権限の要求窓口。未注入なら権限要求もバナーも行わない（従来挙動）。
+  final NotificationPermissionRequester? _permissionRequester;
 
   /// 静穏時間設定の永続化。未注入なら静穏時間への導線を出さない
   /// （既存の呼び出し・試練の挙動を変えないため）。
@@ -45,6 +51,8 @@ class _ReadingReminderSettingsScreenState
 
   bool _loading = true;
   ReadingReminderSettings _settings = ReadingReminderSettings.defaults();
+  NotificationPermissionStatus? _permission;
+  bool _askedOnce = false;
 
   @override
   void initState() {
@@ -54,6 +62,57 @@ class _ReadingReminderSettingsScreenState
         widget._scheduler ?? NotificationServiceReadingReminderScheduler();
     _now = widget._now ?? DateTime.now;
     _load();
+    _ensurePermission(alreadyAsked: _askedOnce);
+  }
+
+  /// 通知権限を確保する（画面表示時の1回＋通知をONにした時）。
+  Future<void> _ensurePermission({bool alreadyAsked = false}) async {
+    final requester = widget._permissionRequester;
+    if (requester == null) return;
+    final status = await requester.ensure(alreadyAsked: alreadyAsked);
+    _askedOnce = true;
+    if (!mounted) return;
+    setState(() => _permission = status);
+  }
+
+  bool get _showPermissionBanner =>
+      _permission == NotificationPermissionStatus.denied ||
+      _permission == NotificationPermissionStatus.permanentlyDenied;
+
+  Widget _buildPermissionBanner(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      key: AppKeys.readingReminderPermissionBanner,
+      color: scheme.errorContainer,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.notifications_off, color: scheme.onErrorContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '通知が許可されていません。'
+                  '端末の設定 > アプリ > 通知 から許可してください。',
+                  style: TextStyle(color: scheme.onErrorContainer),
+                ),
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: AppKeys.readingReminderPermissionSettingsButton,
+              onPressed: () => widget._permissionRequester?.openAppSettings(),
+              child: const Text('設定を開く'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -75,6 +134,7 @@ class _ReadingReminderSettingsScreenState
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (_showPermissionBanner) _buildPermissionBanner(context),
                 const Text(
                   '決めた時刻に読書を促す通知をお届けします。'
                   '曜日と時刻を自由に設定できます。',
@@ -85,8 +145,13 @@ class _ReadingReminderSettingsScreenState
                   title: const Text('読書リマインダー'),
                   subtitle: const Text('毎日の読書の時刻に通知します'),
                   value: _settings.enabled,
-                  onChanged: (value) =>
-                      setState(() => _settings = _settings.copyWith(enabled: value)),
+                  onChanged: (value) {
+                    setState(
+                      () => _settings = _settings.copyWith(enabled: value),
+                    );
+                    // 通知を ON に切り替えた時だけ権限を要求する。
+                    if (value) _ensurePermission();
+                  },
                 ),
                 ListTile(
                   key: AppKeys.readingReminderTimeButton,

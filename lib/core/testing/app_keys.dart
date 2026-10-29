@@ -213,6 +213,12 @@ class AppKeys {
   /// 読書リマインダー設定画面（Scaffold）
   static const Key readingReminderScreen = Key('reading_reminder_screen');
 
+  // 通知権限（Android 13+ の POST_NOTIFICATIONS）
+  static const Key readingReminderPermissionBanner =
+      Key('reading_reminder_permission_banner');
+  static const Key readingReminderPermissionSettingsButton =
+      Key('reading_reminder_permission_settings_button');
+
   /// 読書リマインダー: 有効スイッチ
   static const Key readingReminderEnabledSwitch =
       Key('reading_reminder_enabled_switch');

@@ -32,6 +32,7 @@ import 'package:book_review_app/features/reading/data/reading_session_repository
 import 'package:book_review_app/features/reading/presentation/reading_session_screen.dart';
 import 'package:book_review_app/features/recommendation/presentation/recommendation_screen.dart';
 import 'package:book_review_app/features/reminder/infrastructure/hive_quiet_hours_repository.dart';
+import 'package:book_review_app/features/reminder/infrastructure/notification_permission_requester.dart';
 import 'package:book_review_app/features/reminder/presentation/reading_reminder_settings_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
@@ -536,6 +537,9 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                   builder: (_) => ReadingReminderSettingsScreen(
                     // 静穏時間（おやすみモード）への導線を出すため本番実装を注入。
                     quietHoursRepository: HiveQuietHoursRepository(),
+                    // 通知権限の要求（Android 13+ は要求しないと通知が出ない）。
+                    permissionRequester:
+                        PlatformNotificationPermissionRequester(),
                   ),
                 ),
               ),
