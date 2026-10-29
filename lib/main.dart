@@ -16,6 +16,8 @@ import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
+import 'package:book_review_app/features/lifecycle/domain/day_rollover_detector.dart';
+import 'package:book_review_app/features/lifecycle/presentation/app_lifecycle_refresher.dart';
 import 'package:book_review_app/features/notes/data/hive_book_note_repository.dart';
 import 'package:book_review_app/features/review/data/hive_review_repository.dart';
 import 'package:book_review_app/features/reminder/infrastructure/notification_service.dart';
@@ -85,6 +87,13 @@ class _MyAppState extends State<MyApp> {
   final ReduceMotionRepository _reduceMotionRepo =
       const ReduceMotionRepository();
 
+  /// 前面復帰時の暦日跨ぎ判定（アプリ生存期間で1つ）。
+  late final DayRolloverDetector _dayRolloverDetector =
+      DayRolloverDetector(lastSeen: DateTime.now());
+
+  /// 日付跨ぎ世代。増やすと MainScreen が日付依存の実データを読み直す。
+  int _dayEpoch = 0;
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +101,17 @@ class _MyAppState extends State<MyApp> {
     _loadThemeMode();
     _loadReduceMotion();
     _wireNotificationTaps();
+  }
+
+  /// 前面復帰で日付が跨いだ時の再読込（1回だけ・投げっぱなし）。
+  ///
+  /// 世代を進めるだけで、実データの再読込は既存経路に任せる:
+  /// MainScreen が蔵書を Hive から読み直し、本棚を再マウントして
+  /// 停滞判定・貸出期限などを今日基準に引き直し、併せて
+  /// 返却期限リマインダーを既存の LoanDueReminderResync で組み直す。
+  Future<void> _onDayRollover() async {
+    if (!mounted) return;
+    setState(() => _dayEpoch++);
   }
 
   /// 通知タップの遷移ハンドラを Navigator 構築後に接続する。
@@ -154,32 +174,37 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: widget.notificationTapRouter?.navigatorKey,
-      title: 'book-review-app',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: _themeMode.toThemeMode(),
-      builder: (context, child) => MediaQuery(
-        data: applyReduceMotion(
-          MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(_textScale),
+    return AppLifecycleRefresher(
+      detector: _dayRolloverDetector,
+      onRollover: _onDayRollover,
+      child: MaterialApp(
+        navigatorKey: widget.notificationTapRouter?.navigatorKey,
+        title: 'book-review-app',
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: _themeMode.toThemeMode(),
+        builder: (context, child) => MediaQuery(
+          data: applyReduceMotion(
+            MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(_textScale),
+            ),
+            _reduceMotion,
           ),
-          _reduceMotion,
+          child: child ?? const SizedBox.shrink(),
         ),
-        child: child ?? const SizedBox.shrink(),
-      ),
-      home: AppLockGate(
-        unlockedBuilder: (context) => ErrorBoundary(
-          child: _TutorialGate(
-            repository: const HiveTutorialRepository(),
-            child: MainScreen(
-              textScale: _textScale,
-              onScaleChanged: _changeTextScale,
-              themeMode: _themeMode,
-              onThemeModeChanged: _changeThemeMode,
-              reduceMotion: _reduceMotion,
-              onReduceMotionChanged: _changeReduceMotion,
+        home: AppLockGate(
+          unlockedBuilder: (context) => ErrorBoundary(
+            child: _TutorialGate(
+              repository: const HiveTutorialRepository(),
+              child: MainScreen(
+                dayEpoch: _dayEpoch,
+                textScale: _textScale,
+                onScaleChanged: _changeTextScale,
+                themeMode: _themeMode,
+                onThemeModeChanged: _changeThemeMode,
+                reduceMotion: _reduceMotion,
+                onReduceMotionChanged: _changeReduceMotion,
+              ),
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/review/data/hive_review_repository.dart';
 import 'package:book_review_app/features/notes/data/hive_book_note_repository.dart';
@@ -37,6 +38,10 @@ class MainScreen extends StatefulWidget {
   /// （未指定なら本番の Hive 実装を内部生成する）
   final LoanDueReminderResync? reminderResync;
 
+  /// 日付跨ぎ世代。親（前面復帰の監視）が日付跨ぎを検知するたびに増える。
+  /// 値が変わると [State] 側で日付依存の実データを読み直す。
+  final int dayEpoch;
+
   const MainScreen({
     super.key,
     this.textScale = 1.0,
@@ -46,6 +51,7 @@ class MainScreen extends StatefulWidget {
     this.reduceMotion = ReduceMotionSetting.system,
     this.onReduceMotionChanged,
     this.reminderResync,
+    this.dayEpoch = 0,
   });
 
   @override
@@ -77,11 +83,17 @@ class _MainScreenState extends State<MainScreen> {
 
   bool _initialized = false;
 
+  /// 前面復帰（日付跨ぎ）で読み直した蔵書。本棚へ初期値として渡す。
+  List<Book> _books = const [];
+
+  /// 本棚の再マウント世代（日付依存の停滞判定・期限表示を今日基準で引き直す）。
+  int _shelfEpoch = 0;
+
   /// 起動時の再計算窓口（初回参照時に一度だけ解決する）
   LoanDueReminderResync? _reminderResyncCache;
 
-  LoanDueReminderResync get _reminderResync => _reminderResyncCache ??=
-      widget.reminderResync ??
+  LoanDueReminderResync get _reminderResync =>
+      _reminderResyncCache ??= widget.reminderResync ??
           createHiveLoanDueReminderResync(
             loanRepository: _loanRepository,
             bookTitleLoader: _loadBookTitles,
@@ -91,6 +103,36 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _initRepository();
+  }
+
+  @override
+  void didUpdateWidget(covariant MainScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 前面復帰で日付が跨いだら、日付依存の実データを今日基準で読み直す。
+    if (widget.dayEpoch != oldWidget.dayEpoch) {
+      _refreshForNewDay();
+    }
+  }
+
+  /// 日付跨ぎ（前面復帰）時の再読込。
+  ///
+  /// 蔵書を Hive から読み直したうえで、本棚を再マウントして
+  /// 停滞判定・貸出期限・統計などの日付依存表示を今日基準へ引き直す。
+  /// 併せて返却期限リマインダーを既存の再計算窓口で組み直す。
+  /// いずれも副次的な処理なので、失敗しても画面は現状維持で継続する。
+  Future<void> _refreshForNewDay() async {
+    try {
+      await _repository.init();
+      final books = await _repository.getBooks();
+      await _resyncLoanReminders();
+      if (!mounted) return;
+      setState(() {
+        _books = books;
+        _shelfEpoch++;
+      });
+    } catch (_) {
+      // 再読込の失敗で前面復帰を妨げない。
+    }
   }
 
   Future<void> _initRepository() async {
@@ -135,6 +177,8 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     return BookshelfScreen(
+      key: ValueKey('bookshelf_day_$_shelfEpoch'),
+      initialBooks: _books,
       repository: _repository,
       reviewRepository: _reviewRepository,
       noteRepository: _noteRepository,
