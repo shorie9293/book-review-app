@@ -7,6 +7,7 @@ import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:book_review_app/core/theme/text_scale_setting.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:book_review_app/features/about/presentation/about_screen.dart';
+import 'package:book_review_app/features/auto_backup/data/auto_backup_wiring.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/presentation/backup_screen.dart';
 import 'package:book_review_app/features/reminder/data/quiet_hours_repository.dart';
@@ -56,6 +57,7 @@ class SettingsHubScreen extends StatelessWidget {
   final WidgetBuilder? readingReminderBuilder;
   final WidgetBuilder? quietHoursBuilder;
   final WidgetBuilder? backupBuilder;
+  final WidgetBuilder? autoBackupBuilder;
   final WidgetBuilder? aboutBuilder;
 
   /// バックアップの採取元（`backupBuilder` 未指定時のみ使用）
@@ -80,6 +82,7 @@ class SettingsHubScreen extends StatelessWidget {
     this.readingReminderBuilder,
     this.quietHoursBuilder,
     this.backupBuilder,
+    this.autoBackupBuilder,
     this.aboutBuilder,
     this.backupRepository,
     this.quietHoursRepository,
@@ -230,6 +233,14 @@ class SettingsHubScreen extends StatelessWidget {
             title: 'アプリについて',
             subtitle: 'バージョン・ライセンス・問い合わせ',
             builder: aboutBuilder ?? (_) => const AboutScreen(),
+          ),
+          _item(
+            context,
+            id: 'auto_backup',
+            icon: Icons.restore_page_outlined,
+            title: '自動バックアップ',
+            subtitle: '起動時の控えを一覧・復元・共有する',
+            builder: autoBackupBuilder ?? (_) => buildAutoBackupScreen(),
           ),
         ],
       ),

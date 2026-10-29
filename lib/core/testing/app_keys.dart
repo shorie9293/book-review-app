@@ -522,4 +522,33 @@ class AppKeys {
 
   /// 重複整理: 空状態
   static const Key duplicateEmpty = Key('duplicate_empty');
+
+  /// 自動バックアップ一覧画面（Scaffold）
+  static const Key autoBackupScreen = Key('auto_backup_screen');
+
+  /// 自動バックアップ: 0件の空状態
+  static const Key autoBackupEmpty = Key('auto_backup_empty');
+
+  /// 自動バックアップ: 保持世代の要約ラベル
+  static const Key autoBackupRetention = Key('auto_backup_retention');
+
+  /// 自動バックアップ: 今すぐバックアップするボタン
+  static const Key autoBackupNow = Key('auto_backup_now');
+
+  /// 自動バックアップ: 指定世代の行
+  static Key autoBackupRow(String fileName) => Key('auto_backup_row_$fileName');
+
+  /// 自動バックアップ: 指定世代の復元ボタン
+  static Key autoBackupRestore(String fileName) =>
+      Key('auto_backup_restore_$fileName');
+
+  /// 自動バックアップ: 指定世代の共有ボタン
+  static Key autoBackupShare(String fileName) =>
+      Key('auto_backup_share_$fileName');
+
+  /// 自動バックアップ: 復元確認ダイアログの確定ボタン
+  static const Key autoBackupRestoreConfirm = Key('auto_backup_restore_confirm');
+
+  /// 自動バックアップ: 復元確認ダイアログのキャンセルボタン
+  static const Key autoBackupRestoreCancel = Key('auto_backup_restore_cancel');
 }
