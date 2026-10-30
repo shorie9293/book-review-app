@@ -6,6 +6,8 @@ import 'package:book_review_app/features/reading/domain/reading_session.dart';
 import 'package:book_review_app/features/reading/domain/reading_session_service.dart';
 import 'package:book_review_app/features/reading/domain/reading_stats.dart';
 import 'package:book_review_app/features/reading/presentation/widgets/reading_habit_heatmap.dart';
+import 'package:book_review_app/features/undo/domain/undo_buffer.dart';
+import 'package:book_review_app/features/undo/presentation/undo_snack_bar.dart';
 import 'package:book_review_app/core/haptics.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
@@ -47,6 +49,9 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
 
   Timer? _tickTimer;
   int _elapsedSeconds = 0;
+
+  /// 直近に削除した読書セッション（「元に戻す」用・単一スロット）。
+  final UndoBuffer<ReadingSession> _undoBuffer = UndoBuffer<ReadingSession>();
 
   @override
   void initState() {
@@ -210,9 +215,25 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
     await _reload();
   }
 
+  /// 削除は即時実行し、直後の SnackBar から「元に戻す」で復元できるようにする。
   Future<void> _removeSession(ReadingSession session) async {
+    // 削除対象を保持 → 削除実行（既存の即時削除挙動は不変）
+    _undoBuffer.push(session);
     await widget.repository.remove(session.id);
+    if (!mounted) return;
     await _reload();
+    if (!mounted) return;
+    showUndoSnackBar(
+      context,
+      message: '読書時間を削除しました',
+      onUndo: () async {
+        final restored = _undoBuffer.take();
+        if (restored == null) return;
+        await widget.repository.add(restored);
+        if (!mounted) return;
+        await _reload();
+      },
+    );
   }
 
   @override

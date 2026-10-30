@@ -4,6 +4,8 @@ import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/features/notes/presentation/viewmodel/book_notes_view_model.dart';
 import 'package:book_review_app/features/notes/presentation/widgets/note_card.dart';
 import 'package:book_review_app/features/notes/presentation/widgets/note_form.dart';
+import 'package:book_review_app/features/undo/domain/undo_buffer.dart';
+import 'package:book_review_app/features/undo/presentation/undo_snack_bar.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// 読書メモ・引用の一覧画面。
@@ -29,6 +31,9 @@ class BookNotesScreen extends StatefulWidget {
 class _BookNotesScreenState extends State<BookNotesScreen> {
   final BookNotesViewModel _viewModel = BookNotesViewModel();
   final TextEditingController _searchController = TextEditingController();
+
+  /// 直近に削除したメモ（「元に戻す」用・単一スロット）。
+  final UndoBuffer<BookNote> _undoBuffer = UndoBuffer<BookNote>();
 
   @override
   void initState() {
@@ -108,7 +113,20 @@ class _BookNotesScreenState extends State<BookNotesScreen> {
     );
 
     if (confirmed == true) {
+      // 削除対象を保持 → 削除実行（既存の確認ダイアログ・即時削除挙動は不変）
+      _undoBuffer.push(note);
       await _viewModel.deleteNote(widget.repository, note.id);
+      if (!mounted) return;
+      showUndoSnackBar(
+        context,
+        message: 'メモを削除しました',
+        onUndo: () async {
+          final restored = _undoBuffer.take();
+          if (restored == null) return;
+          // addNote は id をキーに保存するため、削除前と同じ id で復元される。
+          await _viewModel.addNote(widget.repository, restored);
+        },
+      );
     }
   }
 
