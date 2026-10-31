@@ -15,6 +15,7 @@ import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
 
 /// ハブに並ぶ項目の ID（実装と試練の唯一の合意点）。
 const List<String> _itemIds = [
+  'crash_log',
   'appearance',
   'text_scale',
   'reduce_motion',
@@ -29,6 +30,10 @@ Widget _wrap(Widget child) => MaterialApp(home: child);
 
 Future<void> _tapItem(WidgetTester tester, String id) async {
   final finder = find.byKey(AppKeys.settingsHubItem(id));
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(finder, 100,
+        scrollable: find.byType(Scrollable).first);
+  }
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
   await tester.tap(finder);
@@ -37,7 +42,7 @@ Future<void> _tapItem(WidgetTester tester, String id) async {
 
 void main() {
   group('SettingsHubScreen', () {
-    testWidgets('全設定項目（8件）が一覧に表示される', (tester) async {
+    testWidgets('全設定項目（9件）が一覧に表示される', (tester) async {
       await tester.pumpWidget(_wrap(const SettingsHubScreen()));
 
       expect(find.byKey(AppKeys.settingsHubScreen), findsOneWidget);
@@ -50,8 +55,15 @@ void main() {
         expect(finder, findsOneWidget, reason: 'missing hub item: $id');
       }
 
+      // 先頭へ戻して見出し文言を確認する（追加項目で画面外に出るため）。
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pumpAndSettle();
+
       expect(find.text('テーマ'), findsOneWidget);
       expect(find.text('文字サイズ'), findsOneWidget);
+
+      await tester.scrollUntilVisible(find.text('アプリについて'), 120,
+          scrollable: find.byType(Scrollable).first);
       expect(find.text('アプリについて'), findsOneWidget);
     });
 
@@ -95,6 +107,10 @@ void main() {
         aboutBuilder: (c) {
           calls['about'] = (calls['about'] ?? 0) + 1;
           return stub('about')(c);
+        },
+        crashLogBuilder: (c) {
+          calls['crash_log'] = (calls['crash_log'] ?? 0) + 1;
+          return stub('crash_log')(c);
         },
       )));
 

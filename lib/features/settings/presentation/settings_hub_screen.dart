@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:book_review_app/core/crash/crash_log_entry.dart';
+import 'package:book_review_app/core/crash/crash_log_repository.dart';
+import 'package:book_review_app/core/crash/crash_log_screen.dart';
+import 'package:book_review_app/core/crash/crash_log_service.dart';
 import 'package:book_review_app/core/infrastructure/app_lock_settings_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/theme/reduce_motion_repository.dart';
@@ -63,6 +67,12 @@ class SettingsHubScreen extends StatelessWidget {
   /// バックアップの採取元（`backupBuilder` 未指定時のみ使用）
   final BackupRepository? backupRepository;
 
+  /// クラッシュログの読み出し元（未指定なら端末内の既定ログ）
+  final CrashLogRepository? crashLogRepository;
+
+  /// 「不具合の報告」画面ビルダー（未指定なら実画面）
+  final WidgetBuilder? crashLogBuilder;
+
   /// 静穏時間の保存先（未指定なら実装既定＝Hive）
   final QuietHoursRepository? quietHoursRepository;
 
@@ -85,6 +95,8 @@ class SettingsHubScreen extends StatelessWidget {
     this.autoBackupBuilder,
     this.aboutBuilder,
     this.backupRepository,
+    this.crashLogRepository,
+    this.crashLogBuilder,
     this.quietHoursRepository,
   });
 
@@ -107,6 +119,26 @@ class SettingsHubScreen extends StatelessWidget {
   Widget _backupScreen(BuildContext _) => BackupScreen(
         repository: backupRepository!,
       );
+
+  /// 「不具合の報告」1行。記録が1件以上あれば件数を添える。
+  Widget _crashLogItem(BuildContext context) {
+    final repository = crashLogRepository ?? defaultCrashLogRepository;
+    return FutureBuilder<List<CrashLogEntry>>(
+      future: repository.loadAll(),
+      builder: (context, snapshot) {
+        final count = snapshot.data?.length ?? 0;
+        return _item(
+          context,
+          id: 'crash_log',
+          icon: Icons.bug_report_outlined,
+          title: count > 0 ? '不具合の報告（$count）' : '不具合の報告',
+          subtitle: '端末内に記録された不具合を確認する',
+          builder:
+              crashLogBuilder ?? (_) => CrashLogScreen(repository: repository),
+        );
+      },
+    );
+  }
 
   void _open(BuildContext context, WidgetBuilder builder) {
     Navigator.of(context).push(MaterialPageRoute(builder: builder));
@@ -144,8 +176,8 @@ class SettingsHubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backupBuilderResolved = backupBuilder ??
-        (backupRepository == null ? null : _backupScreen);
+    final backupBuilderResolved =
+        backupBuilder ?? (backupRepository == null ? null : _backupScreen);
     final quietHoursRepo = quietHoursRepository;
 
     return Scaffold(
@@ -153,6 +185,7 @@ class SettingsHubScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('設定')),
       body: ListView(
         children: [
+          _crashLogItem(context),
           _item(
             context,
             id: 'appearance',
@@ -208,8 +241,7 @@ class SettingsHubScreen extends StatelessWidget {
             subtitle: '通知を止める時間帯を決める',
             builder: quietHoursBuilder ??
                 (_) => QuietHoursSettingsScreen(
-                      repository: quietHoursRepo ??
-                          HiveQuietHoursRepository(),
+                      repository: quietHoursRepo ?? HiveQuietHoursRepository(),
                     ),
           ),
           const Divider(),

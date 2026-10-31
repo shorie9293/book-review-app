@@ -2,6 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:book_review_app/core/crash/crash_guard.dart';
+import 'package:book_review_app/core/crash/crash_log_repository.dart';
+import 'package:book_review_app/core/crash/crash_log_service.dart';
+import 'package:book_review_app/core/crash/error_boundary.dart';
 import 'package:book_review_app/core/infrastructure/app_lock_gate.dart';
 import 'package:book_review_app/core/theme/app_theme.dart';
 import 'package:book_review_app/core/theme/theme_mode_repository.dart';
@@ -10,7 +14,6 @@ import 'package:book_review_app/core/theme/text_scale_repository.dart';
 import 'package:book_review_app/core/theme/text_scale_setting.dart';
 import 'package:book_review_app/core/theme/reduce_motion_repository.dart';
 import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
-import 'package:takamagahara_ui/takamagahara_ui.dart';
 import 'package:book_review_app/features/auto_backup/data/auto_backup_bootstrap.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
@@ -26,8 +29,29 @@ import 'package:book_review_app/features/tutorial/data/tutorial_repository.dart'
 import 'package:book_review_app/features/tutorial/presentation/tutorial_screen.dart';
 import 'package:book_review_app/screens/main_screen.dart';
 
-void main() async {
+/// 端末内クラッシュログの記録役（zone の受け皿から使う）。
+CrashLogger? _crashLogger;
+
+void main() {
+  // 未捕捉例外の最終受け皿。zone 外へ漏れた例外もここで1行残す。
+  runZonedGuarded(
+    () async {
+      await bootstrap();
+    },
+    (error, stack) {
+      _crashLogger?.record(error, stack, kind: 'zone');
+    },
+  );
+}
+
+Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 端末内クラッシュログと未捕捉例外の受け皿（FlutterError / PlatformDispatcher）。
+  final crashLogger = CrashLogger(FileCrashLogRepository());
+  _crashLogger = crashLogger;
+  installCrashGuard(logger: crashLogger);
+
   await Hive.initFlutter();
 
   // 通知タップ → 該当画面遷移の配線。
