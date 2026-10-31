@@ -10,6 +10,7 @@ import 'package:book_review_app/features/undo/domain/undo_buffer.dart';
 import 'package:book_review_app/features/undo/presentation/undo_snack_bar.dart';
 import 'package:book_review_app/core/haptics.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/load_state_views.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 /// 読書時間画面。
@@ -41,6 +42,9 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
   bool _isLoading = true;
   String? _loadError;
 
+  /// 直近の失敗が再試行可能か（[LoadErrorView] のボタン表示に使う）。
+  bool _errorRetryable = true;
+
   /// タイマー起動中の開始時刻（null なら未起動）。
   DateTime? _startedAt;
 
@@ -65,24 +69,23 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
     super.dispose();
   }
 
+  /// 読み込み。失敗しても既存の [_sessions] は消さず、失敗状態だけを立てる。
   Future<void> _reload() async {
-    List<ReadingSession> sessions;
-    try {
-      sessions = await widget.repository.loadAll();
-    } catch (error) {
-      if (!mounted) return;
+    final result = await widget.repository.tryLoadSessions();
+    if (!mounted) return;
+    if (result.isFailure) {
       setState(() {
-        _sessions = [];
         _isLoading = false;
-        _loadError = '読み込みに失敗しました: $error';
+        _loadError = result.message ?? '読み込みに失敗しました';
+        _errorRetryable = result.retryable;
       });
       return;
     }
-    if (!mounted) return;
     setState(() {
-      _sessions = sessions;
+      _sessions = result.valueOrNull ?? const <ReadingSession>[];
       _isLoading = false;
       _loadError = null;
+      _errorRetryable = true;
     });
   }
 
@@ -259,9 +262,10 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
 
   Widget _buildBody() {
     if (_loadError != null) {
-      return Center(
-        child: Text(_loadError!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error)),
+      // 失敗は「0件」と別ウィジェットで示す。再試行は同ロードの再実行。
+      return LoadErrorView(
+        message: _loadError!,
+        onRetry: _errorRetryable ? () => _reload() : null,
       );
     }
     if (_sessions.isEmpty) {
@@ -269,12 +273,9 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Center(
+          const LoadEmptyView(
             key: AppKeys.readingEmpty,
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 48),
-              child: Text('まだ記録がありません'),
-            ),
+            message: 'まだ記録がありません',
           ),
           _buildTimerSection(),
         ],
