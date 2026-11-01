@@ -16,6 +16,9 @@ class BackupKeys {
   /// CSV エクスポートボタン
   static const Key csvExportButton = Key('backup_csv_export_button');
 
+  /// 蔵書 CSV の共有ボタン（csvSharer 未注入なら表示しない）
+  static const Key csvShareButton = Key('backup_csv_share_button');
+
   /// 復元用 JSON 貼り付けフィールド
   static const Key importField = Key('backup_import_field');
 

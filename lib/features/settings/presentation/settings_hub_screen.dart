@@ -12,6 +12,7 @@ import 'package:book_review_app/core/theme/text_scale_setting.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:book_review_app/features/about/presentation/about_screen.dart';
 import 'package:book_review_app/features/auto_backup/data/auto_backup_wiring.dart';
+import 'package:book_review_app/features/backup/data/backup_csv_sharer.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/presentation/backup_screen.dart';
 import 'package:book_review_app/features/reminder/data/quiet_hours_repository.dart';
@@ -118,6 +119,7 @@ class SettingsHubScreen extends StatelessWidget {
 
   Widget _backupScreen(BuildContext _) => BackupScreen(
         repository: backupRepository!,
+        csvSharer: const SharePlusBackupCsvSharer(),
       );
 
   /// 「不具合の報告」1行。記録が1件以上あれば件数を添える。

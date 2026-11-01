@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:book_review_app/features/backup/data/backup_csv_sharer.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/domain/backup_models.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
@@ -30,6 +31,9 @@ class BackupScreen extends StatefulWidget {
   /// クロスアプリ連携の送信済みイベント記録（未指定なら件数行を出さない）
   final RewardExportLogRepository? crossAppRewardLogRepository;
 
+  /// 蔵書 CSV の共有口（未指定なら「CSVを共有」ボタンを出さない）
+  final BackupCsvSharer? csvSharer;
+
   const BackupScreen({
     super.key,
     required this.repository,
@@ -37,6 +41,7 @@ class BackupScreen extends StatefulWidget {
     this.clipboardWriter = _defaultClipboardWriter,
     this.crossAppLinkRepository,
     this.crossAppRewardLogRepository,
+    this.csvSharer,
   });
 
   static Future<void> _defaultClipboardWriter(String value) {
@@ -123,6 +128,24 @@ class _BackupScreenState extends State<BackupScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('蔵書CSVをクリップボードにコピーしました')),
+    );
+  }
+
+  /// 蔵書一覧をCSVファイルにして共有シートへ渡す。
+  ///
+  /// 共有する CSV は BOM 無し（BOM は [BackupCsvSharer] 実装が付ける）。
+  Future<void> _shareCsv() async {
+    final sharer = widget.csvSharer;
+    final bundle = _bundle;
+    if (sharer == null || bundle == null) return;
+    final csv = BackupService.exportBooksCsv(bundle.books);
+    await sharer.share(
+      csv: csv,
+      fileName: backupCsvFileName(DateTime.now()),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('蔵書CSVを共有しました')),
     );
   }
 
@@ -331,6 +354,15 @@ class _BackupScreenState extends State<BackupScreen> {
             ),
           ],
         ),
+        if (widget.csvSharer != null) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: BackupKeys.csvShareButton,
+            onPressed: _bundle == null ? null : _shareCsv,
+            icon: const Icon(Icons.share),
+            label: const Text('CSVを共有'),
+          ),
+        ],
         const SizedBox(height: 8),
         if (_exportedJson != null)
           SizedBox(

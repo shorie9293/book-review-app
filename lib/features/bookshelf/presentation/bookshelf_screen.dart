@@ -6,6 +6,7 @@ import 'package:book_review_app/features/bookshelf/data/book_search_service.dart
 import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
 import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
+import 'package:book_review_app/features/backup/data/backup_csv_sharer.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/presentation/backup_screen.dart';
 import 'package:book_review_app/features/crossapp/data/book_reward_export_coordinator.dart';
@@ -316,6 +317,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           ),
           crossAppLinkRepository: widget.crossAppLinkRepository,
           crossAppRewardLogRepository: widget.crossAppRewardLogRepository,
+          csvSharer: const SharePlusBackupCsvSharer(),
         ),
       ),
     );
