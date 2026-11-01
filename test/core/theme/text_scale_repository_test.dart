@@ -15,7 +15,7 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.deleteBoxFromDisk('settings');
+    await Hive.deleteBoxFromDisk(TextScaleRepository.boxName);
     try {
       tempDir.deleteSync(recursive: true);
     } catch (_) {}
@@ -38,7 +38,7 @@ void main() {
 
     test('loadScale returns null for invalid stored value', () async {
       final repo = TextScaleRepository();
-      final box = await Hive.openBox<double>('settings');
+      final box = await Hive.openBox<double>(TextScaleRepository.boxName);
       await box.put('book_review_text_scale', 3.3);
       expect(await repo.loadScale(), isNull);
     });

@@ -3,12 +3,16 @@ import 'package:book_review_app/core/theme/text_scale_setting.dart';
 
 /// 文字サイズ（UIスケール）設定のリポジトリ
 ///
-/// Hive の settings ボックスにスケール倍率を保存・復元する
+/// Hive の settings_scalars ボックスにスケール倍率を保存・復元する
 /// （本アプリの永続化は Hive が標準）。
 /// アプリ全体のテキストは [TextScaler.linear] で拡大縮小される
 /// （MaterialApp.builder の MediaQuery で上書き）。
 class TextScaleRepository {
-  static const String _boxName = 'settings';
+  /// 数値専用ボックス。theme_mode / reduce_motion が使う 'settings'
+  /// （String 型）とは分離する。同じ box 名を異なる型で開くと Hive が
+  /// 最初の open で型を固定するため HiveError で落ちる（実機でも発生）。
+  static const String boxName = 'settings_scalars';
+  static const String _boxName = boxName;
   static const String _key = 'book_review_text_scale';
 
   const TextScaleRepository();

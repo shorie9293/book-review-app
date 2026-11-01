@@ -5,6 +5,9 @@ import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 ///
 /// Hive の settings ボックスに選択値を保存・復元する
 /// （本アプリの永続化は Hive が標準）。
+///
+/// 文字列専用。数値（文字サイズ）は型競合を避けて
+/// `TextScaleRepository.boxName`（'settings_scalars'）に分離している。
 class ReduceMotionRepository {
   static const String _boxName = 'settings';
   static const String _key = 'book_reduce_motion';
