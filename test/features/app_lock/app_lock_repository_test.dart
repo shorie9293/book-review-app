@@ -32,11 +32,12 @@ void main() {
       expect(repo.getPasscodeHash(), isNull);
     });
 
-    test('パスコード保存・照合（salt 付きハッシュ・定数時間比較）', () async {
+    test('パスコード保存・照合（v2 ソルト付き反復ハッシュ）', () async {
       await repo.setPasscode('1234');
       final hash = repo.getPasscodeHash()!;
       expect(hash, isNot('1234'));
-      expect(hash.length, 64);
+      expect(hash, startsWith('v2:1200:'));
+      expect(hash.split(':').length, 4);
       expect(repo.verifyPasscode('1234'), isTrue);
       expect(repo.verifyPasscode('1235'), isFalse);
       expect(repo.verifyPasscode(''), isFalse);

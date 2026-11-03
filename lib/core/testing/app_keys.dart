@@ -563,4 +563,7 @@ class AppKeys {
 
   /// 自動バックアップ: 復元確認ダイアログのキャンセルボタン
   static const Key autoBackupRestoreCancel = Key('auto_backup_restore_cancel');
+
+  /// アプリロック: 復帰時の再施錠猶予（秒）ドロップダウン
+  static const Key appLockGraceDropdown = Key('app_lock_grace_dropdown');
 }
