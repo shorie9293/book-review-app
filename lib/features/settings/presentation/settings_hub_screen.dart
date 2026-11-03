@@ -15,6 +15,7 @@ import 'package:book_review_app/features/auto_backup/data/auto_backup_wiring.dar
 import 'package:book_review_app/features/backup/data/backup_csv_sharer.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/presentation/backup_screen.dart';
+import 'package:book_review_app/features/help/presentation/help_screen.dart';
 import 'package:book_review_app/features/reminder/data/quiet_hours_repository.dart';
 import 'package:book_review_app/features/reminder/infrastructure/hive_quiet_hours_repository.dart';
 import 'package:book_review_app/features/reminder/presentation/quiet_hours_settings_screen.dart';
@@ -275,6 +276,14 @@ class SettingsHubScreen extends StatelessWidget {
             title: '自動バックアップ',
             subtitle: '起動時の控えを一覧・復元・共有する',
             builder: autoBackupBuilder ?? (_) => buildAutoBackupScreen(),
+          ),
+          _item(
+            context,
+            id: 'help',
+            icon: Icons.menu_book_outlined,
+            title: '遊び方・ヘルプ',
+            subtitle: 'チュートリアルをもう一度読む',
+            builder: (_) => const HelpScreen(),
           ),
         ],
       ),

@@ -13,6 +13,18 @@ class AppKeys {
   /// 設定ハブ: 指定項目の行（'appearance' / 'text_scale' / ... を指定）
   static Key settingsHubItem(String id) => Key('settings_hub_item_$id');
 
+  /// 「遊び方・ヘルプ」画面（Scaffold）
+  static const Key helpScreen = Key('help_screen');
+
+  /// 「遊び方・ヘルプ」: 検索欄
+  static const Key helpSearchField = Key('help_search_field');
+
+  /// 「遊び方・ヘルプ」: 検索0件時の空状態
+  static const Key helpEmpty = Key('help_empty');
+
+  /// 「遊び方・ヘルプ」: 指定トピックの章（id を指定）
+  static Key helpTopic(String id) => Key('help_topic_$id');
+
   /// テーマ設定画面（Scaffold）
   static const Key themeModeScreen = Key('theme_mode_screen');
 
