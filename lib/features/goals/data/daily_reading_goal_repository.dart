@@ -6,8 +6,8 @@ library;
 
 import 'dart:convert';
 
+import 'package:book_review_app/core/logging/app_logger.dart';
 import 'package:book_review_app/features/goals/domain/daily_reading_goal.dart';
-import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 abstract class DailyReadingGoalRepository {
@@ -44,7 +44,7 @@ class HiveDailyReadingGoalRepository implements DailyReadingGoalRepository {
       }
       return DailyReadingGoal.fromJson(decoded);
     } catch (e) {
-      debugPrint('[DailyReadingGoalRepo] load failed: $e');
+      appLog.warn('[DailyReadingGoalRepo] load failed', e);
       return const DailyReadingGoal.empty();
     }
   }

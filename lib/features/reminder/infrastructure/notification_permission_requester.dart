@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import 'package:book_review_app/core/logging/app_logger.dart';
 
 /// 通知権限の状態。
 ///
@@ -90,7 +91,7 @@ class PlatformNotificationPermissionRequester
           ? NotificationPermissionStatus.granted
           : NotificationPermissionStatus.permanentlyDenied;
     } catch (e) {
-      debugPrint('[NotificationPermissionRequester] ensure 失敗: $e');
+      appLog.warn('[NotificationPermissionRequester] ensure 失敗', e);
       return NotificationPermissionStatus.denied;
     }
   }
@@ -100,7 +101,7 @@ class PlatformNotificationPermissionRequester
     try {
       await _platform.openSettings();
     } catch (e) {
-      debugPrint('[NotificationPermissionRequester] openAppSettings 失敗: $e');
+      appLog.warn('[NotificationPermissionRequester] openAppSettings 失敗', e);
     }
   }
 }

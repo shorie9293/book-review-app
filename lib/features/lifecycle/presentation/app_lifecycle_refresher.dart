@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:book_review_app/core/logging/app_logger.dart';
 import 'package:book_review_app/features/lifecycle/domain/day_rollover_detector.dart';
 
 /// アプリが前面復帰した時に、日付が跨いでいれば [onRollover] を1回だけ呼ぶ。
@@ -66,7 +66,7 @@ class _AppLifecycleRefresherState extends State<AppLifecycleRefresher>
     // 通知は副次的な処理なので、失敗してもアプリを落とさない。
     unawaited(
       widget.onRollover().catchError((Object error, StackTrace stack) {
-        debugPrint('day rollover refresh failed: $error');
+        appLog.warn('day rollover refresh failed', error, stack);
       }).whenComplete(() {
         _rolloverInFlight = false;
       }),

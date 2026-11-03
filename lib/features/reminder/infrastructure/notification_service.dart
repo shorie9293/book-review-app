@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:book_review_app/core/logging/app_logger.dart';
 import 'package:book_review_app/features/reminder/domain/notification_route_resolver.dart';
 import 'package:book_review_app/features/reminder/domain/quiet_hours_service.dart';
 import 'package:book_review_app/features/reminder/infrastructure/quiet_hours_guard_wiring.dart';
@@ -149,10 +149,10 @@ class BookNotificationService {
           );
         }
       } catch (e) {
-        debugPrint('[BookNotificationService] 起動通知の取得失敗: $e');
+        appLog.warn('[BookNotificationService] 起動通知の取得失敗', e);
       }
     } catch (e) {
-      debugPrint('[BookNotificationService] initialize 失敗: $e');
+      appLog.error('[BookNotificationService] initialize 失敗', e);
     }
   }
 
@@ -177,7 +177,7 @@ class BookNotificationService {
       }
       return true;
     } catch (e) {
-      debugPrint('[BookNotificationService] requestPermission 失敗: $e');
+      appLog.warn('[BookNotificationService] requestPermission 失敗', e);
       return false;
     }
   }
@@ -230,7 +230,7 @@ class BookNotificationService {
         );
       }
     } catch (e) {
-      debugPrint('[BookNotificationService] scheduleReadingReminder 失敗: $e');
+      appLog.warn('[BookNotificationService] scheduleReadingReminder 失敗', e);
     }
   }
 
@@ -241,7 +241,7 @@ class BookNotificationService {
         await _plugin.cancel(_reminderBaseId + weekday);
       }
     } catch (e) {
-      debugPrint('[BookNotificationService] cancelReadingReminder 失敗: $e');
+      appLog.warn('[BookNotificationService] cancelReadingReminder 失敗', e);
     }
   }
 
@@ -286,7 +286,7 @@ class BookNotificationService {
             NotificationRouteResolver.buildPayload(NotificationRoutes.loans),
       );
     } catch (e) {
-      debugPrint('[BookNotificationService] scheduleLoanDueReminder 失敗: $e');
+      appLog.warn('[BookNotificationService] scheduleLoanDueReminder 失敗', e);
     }
   }
 
@@ -295,7 +295,7 @@ class BookNotificationService {
     try {
       await _plugin.cancel(_loanDueBaseId);
     } catch (e) {
-      debugPrint('[BookNotificationService] cancelLoanDueReminder 失敗: $e');
+      appLog.warn('[BookNotificationService] cancelLoanDueReminder 失敗', e);
     }
   }
 
@@ -318,7 +318,7 @@ class BookNotificationService {
         ),
       );
     } catch (e) {
-      debugPrint('[BookNotificationService] sendTestNotification 失敗: $e');
+      appLog.warn('[BookNotificationService] sendTestNotification 失敗', e);
     }
   }
 
@@ -331,7 +331,7 @@ class BookNotificationService {
       if (adjusted == null) return null;
       return tz.TZDateTime.from(adjusted, tz.local);
     } catch (e) {
-      debugPrint('[BookNotificationService] 静穏時間ガード失敗: $e');
+      appLog.warn('[BookNotificationService] 静穏時間ガード失敗', e);
       return scheduled;
     }
   }
