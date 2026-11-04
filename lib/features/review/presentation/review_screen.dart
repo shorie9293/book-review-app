@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/input/draft_store.dart';
+import 'package:book_review_app/core/input/guarded_dialog.dart';
+import 'package:book_review_app/core/input/unsaved_changes.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
@@ -12,6 +17,9 @@ import 'package:takamagahara_ui/takamagahara_ui.dart';
 /// 指定された書籍（bookId）のレビューを一覧表示する。
 /// レビューの追加、編集、削除機能を提供する。
 /// [noteRepository] が渡された場合は読書メモ・引用画面への導線を表示する。
+///
+/// [draftStore] が渡された場合は、入力途中のレビュー本文を下書きとして保存し、
+/// 誤って閉じても復元できる（保存成功時にのみ下書きを消す）。
 class ReviewScreen extends StatefulWidget {
   final String bookId;
   final ReviewRepository reviewRepository;
@@ -19,12 +27,22 @@ class ReviewScreen extends StatefulWidget {
   /// 読書メモ・引用リポジトリ（未指定なら導線を表示しない）
   final BookNoteRepository? noteRepository;
 
+  /// 下書きの保存先（未指定なら下書き機能なし＝既存挙動）
+  final DraftStore? draftStore;
+
   const ReviewScreen({
     super.key,
     required this.bookId,
     required this.reviewRepository,
     this.noteRepository,
+    this.draftStore,
   });
+
+  /// 新規レビュー下書きのキー。
+  static String draftKeyForNew(String bookId) => 'review_new:$bookId';
+
+  /// 編集レビュー下書きのキー。
+  static String draftKeyForEdit(String reviewId) => 'review_edit:$reviewId';
 
   @override
   State<ReviewScreen> createState() => _ReviewScreenState();
@@ -62,14 +80,36 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
   }
 
-  Future<void> _addReview(Review review) async {
-    await widget.reviewRepository.addReview(review);
+  Future<void> _addReview(Review review, String draftKey) async {
+    try {
+      await widget.reviewRepository.addReview(review);
+      // 保存に成功したときだけ下書きを消す（失敗時は入力消失を防ぐ）。
+      // 下書き削除は後片付けゆえ、完了を待たずに一覧を更新する
+      // （実ストレージの I/O が遅い/詰まっても保存導線を止めない）。
+      unawaited(widget.draftStore?.clear(draftKey) ?? Future<void>.value());
+    } catch (e) {
+      _showSaveFailure();
+      return;
+    }
     await _loadReviews();
   }
 
-  Future<void> _updateReview(Review review) async {
-    await widget.reviewRepository.updateReview(review);
+  Future<void> _updateReview(Review review, String draftKey) async {
+    try {
+      await widget.reviewRepository.updateReview(review);
+      unawaited(widget.draftStore?.clear(draftKey) ?? Future<void>.value());
+    } catch (e) {
+      _showSaveFailure();
+      return;
+    }
     await _loadReviews();
+  }
+
+  void _showSaveFailure() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('保存に失敗しました。入力内容は下書きに残しています。')),
+    );
   }
 
   Future<void> _deleteReview(String id) async {
@@ -78,18 +118,27 @@ class _ReviewScreenState extends State<ReviewScreen> {
   }
 
   void _showAddDialog() {
-    showDialog<void>(
+    final formKey = GlobalKey<ReviewFormState>();
+    final draftKey = ReviewScreen.draftKeyForNew(widget.bookId);
+    showGuardedDialog<void>(
       context: context,
-      builder: (context) {
+      isDirty: () => formKey.currentState?.isDirty ?? false,
+      message: UnsavedChangesGuard.confirmMessage(
+        draftKept: widget.draftStore != null,
+      ),
+      builder: (dialogContext) {
         return AlertDialog(
           content: ReviewForm(
+            key: formKey,
             bookId: widget.bookId,
+            draftStore: widget.draftStore,
+            draftKey: draftKey,
             onSave: (review) {
-              Navigator.of(context).pop();
-              _addReview(review);
+              Navigator.of(dialogContext).pop();
+              _addReview(review, draftKey);
             },
             onCancel: () {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
             },
           ),
         );
@@ -98,19 +147,28 @@ class _ReviewScreenState extends State<ReviewScreen> {
   }
 
   void _showEditDialog(Review review) {
-    showDialog<void>(
+    final formKey = GlobalKey<ReviewFormState>();
+    final draftKey = ReviewScreen.draftKeyForEdit(review.id);
+    showGuardedDialog<void>(
       context: context,
-      builder: (context) {
+      isDirty: () => formKey.currentState?.isDirty ?? false,
+      message: UnsavedChangesGuard.confirmMessage(
+        draftKept: widget.draftStore != null,
+      ),
+      builder: (dialogContext) {
         return AlertDialog(
           content: ReviewForm(
+            key: formKey,
             bookId: widget.bookId,
             review: review,
+            draftStore: widget.draftStore,
+            draftKey: draftKey,
             onSave: (updated) {
-              Navigator.of(context).pop();
-              _updateReview(updated);
+              Navigator.of(dialogContext).pop();
+              _updateReview(updated, draftKey);
             },
             onCancel: () {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
             },
           ),
         );
@@ -152,6 +210,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         builder: (_) => BookNotesScreen(
           bookId: widget.bookId,
           repository: widget.noteRepository!,
+          draftStore: widget.draftStore,
         ),
       ),
     );

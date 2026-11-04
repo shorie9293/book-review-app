@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/input/draft_store.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_loan.dart';
@@ -191,6 +192,9 @@ class BookDetailScreen extends StatefulWidget {
   /// 返却期限リマインダーの再計算窓口（未指定なら再計算しない）
   final LoanDueReminderResync? reminderResync;
 
+  /// 長文入力の下書き保存先（未指定なら Hive の既定箱を使う）
+  final DraftStore? draftStore;
+
   const BookDetailScreen({
     super.key,
     required this.book,
@@ -201,6 +205,7 @@ class BookDetailScreen extends StatefulWidget {
     this.nowOverride,
     this.rewardExportCoordinator,
     this.reminderResync,
+    this.draftStore,
   });
 
   @override
@@ -315,6 +320,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     return {for (final b in books) b.id: b.title};
   }
 
+  /// 入力途中のレビュー・メモを長文消失から守る下書き先。
+  DraftStore get _draftStore => widget.draftStore ?? HiveDraftStore();
+
   void _openReviewScreen() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -322,6 +330,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           bookId: widget.book.id,
           reviewRepository: widget.reviewRepository,
           noteRepository: widget.noteRepository,
+          draftStore: _draftStore,
         ),
       ),
     );
@@ -336,6 +345,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           bookId: widget.book.id,
           repository: noteRepository,
           bookTitle: widget.book.title,
+          draftStore: _draftStore,
         ),
       ),
     );

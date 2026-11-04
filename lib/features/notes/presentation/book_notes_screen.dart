@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/input/draft_store.dart';
+import 'package:book_review_app/core/input/guarded_dialog.dart';
+import 'package:book_review_app/core/input/unsaved_changes.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/features/notes/presentation/viewmodel/book_notes_view_model.dart';
@@ -12,17 +17,30 @@ import 'package:takamagahara_ui/takamagahara_ui.dart';
 ///
 /// 指定書籍（bookId）に紐づくメモをページ番号付きで一覧表示し、
 /// 種別・キーワードでの絞り込み、追加・編集・削除を提供する。
+///
+/// [draftStore] が渡された場合は、入力途中の本文・ページ・タグを下書きとして
+/// 保存し、誤って閉じても復元できる（保存成功時にのみ下書きを消す）。
 class BookNotesScreen extends StatefulWidget {
   final String bookId;
   final BookNoteRepository repository;
   final String? bookTitle;
+
+  /// 下書きの保存先（未指定なら下書き機能なし＝既存挙動）
+  final DraftStore? draftStore;
 
   const BookNotesScreen({
     super.key,
     required this.bookId,
     required this.repository,
     this.bookTitle,
+    this.draftStore,
   });
+
+  /// 新規メモ下書きのキー。
+  static String draftKeyForNew(String bookId) => 'note_new:$bookId';
+
+  /// 編集メモ下書きのキー。
+  static String draftKeyForEdit(String noteId) => 'note_edit:$noteId';
 
   @override
   State<BookNotesScreen> createState() => _BookNotesScreenState();
@@ -48,18 +66,55 @@ class _BookNotesScreenState extends State<BookNotesScreen> {
     super.dispose();
   }
 
+  /// メモを保存する（成功時のみ下書きを消す）。
+  Future<void> _addNote(BookNote note, String draftKey) async {
+    try {
+      await _viewModel.addNote(widget.repository, note);
+      // 下書き削除は後片付けゆえ、完了を待たない。
+      unawaited(widget.draftStore?.clear(draftKey) ?? Future<void>.value());
+    } catch (e) {
+      _showSaveFailure();
+    }
+  }
+
+  /// メモを更新する（成功時のみ下書きを消す）。
+  Future<void> _updateNote(BookNote note, String draftKey) async {
+    try {
+      await _viewModel.updateNote(widget.repository, note);
+      unawaited(widget.draftStore?.clear(draftKey) ?? Future<void>.value());
+    } catch (e) {
+      _showSaveFailure();
+    }
+  }
+
+  void _showSaveFailure() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('保存に失敗しました。入力内容は下書きに残しています。')),
+    );
+  }
+
   void _showAddDialog() {
-    showDialog<void>(
+    final formKey = GlobalKey<NoteFormState>();
+    final draftKey = BookNotesScreen.draftKeyForNew(widget.bookId);
+    showGuardedDialog<void>(
       context: context,
+      isDirty: () => formKey.currentState?.isDirty ?? false,
+      message: UnsavedChangesGuard.confirmMessage(
+        draftKept: widget.draftStore != null,
+      ),
       builder: (dialogContext) {
         final navigator = Navigator.of(dialogContext);
         return AlertDialog(
           title: const Text('メモを追加'),
           content: NoteForm(
+            key: formKey,
             bookId: widget.bookId,
+            draftStore: widget.draftStore,
+            draftKey: draftKey,
             onSave: (note) {
               navigator.pop();
-              _viewModel.addNote(widget.repository, note);
+              _addNote(note, draftKey);
             },
             onCancel: () => navigator.pop(),
           ),
@@ -69,18 +124,27 @@ class _BookNotesScreenState extends State<BookNotesScreen> {
   }
 
   void _showEditDialog(BookNote note) {
-    showDialog<void>(
+    final formKey = GlobalKey<NoteFormState>();
+    final draftKey = BookNotesScreen.draftKeyForEdit(note.id);
+    showGuardedDialog<void>(
       context: context,
+      isDirty: () => formKey.currentState?.isDirty ?? false,
+      message: UnsavedChangesGuard.confirmMessage(
+        draftKept: widget.draftStore != null,
+      ),
       builder: (dialogContext) {
         final navigator = Navigator.of(dialogContext);
         return AlertDialog(
           title: const Text('メモを編集'),
           content: NoteForm(
+            key: formKey,
             bookId: widget.bookId,
             note: note,
+            draftStore: widget.draftStore,
+            draftKey: draftKey,
             onSave: (updated) {
               navigator.pop();
-              _viewModel.updateNote(widget.repository, updated);
+              _updateNote(updated, draftKey);
             },
             onCancel: () => navigator.pop(),
           ),
