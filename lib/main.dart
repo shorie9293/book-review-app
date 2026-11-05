@@ -15,6 +15,7 @@ import 'package:book_review_app/core/theme/text_scale_setting.dart';
 import 'package:book_review_app/core/theme/reduce_motion_repository.dart';
 import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:book_review_app/features/auto_backup/data/auto_backup_bootstrap.dart';
+import 'package:book_review_app/features/auto_backup/data/auto_backup_status_store.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
@@ -67,7 +68,10 @@ Future<void> bootstrap() async {
   unawaited(notificationService.initialize());
 
   // 起動時1日1回の自動バックアップ（世代3）。起動は待たせない。
-  scheduleAutoBackup(buildJson: _buildAutoBackupJson);
+  scheduleAutoBackup(
+    buildJson: _buildAutoBackupJson,
+    statusStore: FileAutoBackupStatusStore(),
+  );
 
   runApp(MyApp(notificationTapRouter: tapRouter));
 }

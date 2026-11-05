@@ -564,6 +564,15 @@ class AppKeys {
   /// 自動バックアップ: 復元確認ダイアログのキャンセルボタン
   static const Key autoBackupRestoreCancel = Key('auto_backup_restore_cancel');
 
+  /// 自動バックアップ: 最終成功時刻の表示
+  static const Key autoBackupLastSuccess = Key('auto_backup_last_success');
+
+  /// 自動バックアップ: 失敗の警告バナー
+  static const Key autoBackupFailureBanner = Key('auto_backup_failure_banner');
+
+  /// 自動バックアップ: 失敗バナーからの再試行ボタン
+  static const Key autoBackupRetry = Key('auto_backup_retry');
+
   /// アプリロック: 復帰時の再施錠猶予（秒）ドロップダウン
   static const Key appLockGraceDropdown = Key('app_lock_grace_dropdown');
 }

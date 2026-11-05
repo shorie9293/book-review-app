@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:book_review_app/core/logging/app_logger.dart';
+import 'package:book_review_app/features/auto_backup/data/auto_backup_status_store.dart';
 import 'package:book_review_app/features/auto_backup/data/auto_backup_store.dart';
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_policy.dart';
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_service.dart';
@@ -8,14 +9,18 @@ import 'package:book_review_app/features/auto_backup/domain/auto_backup_service.
 /// 起動直後の自動バックアップを投げっぱなしで予約する。
 ///
 /// 失敗しても例外は外へ出さず、[appLog] にだけ残す（起動の邪魔をしない）。
+/// 成否は [statusStore] に記録し、画面が「未実行」と「毎回失敗」を
+/// 区別できるようにする。
 void scheduleAutoBackup({
   required Future<String> Function() buildJson,
   AutoBackupStore? store,
+  AutoBackupStatusStore? statusStore,
   AutoBackupPolicy policy = const AutoBackupPolicy(),
 }) {
   final service = AutoBackupService(
     store: store ?? FileAutoBackupStore(),
     policy: policy,
+    statusStore: statusStore ?? FileAutoBackupStatusStore(),
   );
   unawaited(
     service.run(buildJson).then<void>(

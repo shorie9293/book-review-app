@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
+import 'package:book_review_app/features/auto_backup/data/auto_backup_status_store.dart';
 import 'package:book_review_app/features/settings/presentation/settings_hub_screen.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
@@ -42,6 +43,7 @@ class _ThemeModeSettingsScreenState extends State<ThemeModeSettingsScreen> {
                   builder: (_) => SettingsHubScreen(
                     themeMode: widget.currentMode,
                     onThemeModeChanged: widget.onModeChanged,
+                    autoBackupStatusStore: FileAutoBackupStatusStore(),
                   ),
                 ),
               ),

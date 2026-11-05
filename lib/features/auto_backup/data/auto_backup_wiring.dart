@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:book_review_app/features/auto_backup/data/auto_backup_restorer_impl.dart';
 import 'package:book_review_app/features/auto_backup/data/auto_backup_sharer_impl.dart';
+import 'package:book_review_app/features/auto_backup/data/auto_backup_status_store.dart';
 import 'package:book_review_app/features/auto_backup/data/auto_backup_store.dart';
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_policy.dart';
 import 'package:book_review_app/features/auto_backup/presentation/auto_backup_screen.dart';
@@ -50,6 +51,7 @@ Widget buildAutoBackupScreen() {
       applyBackup: _applyJson,
     ),
     sharer: SharePlusAutoBackupSharer(),
+    statusStore: FileAutoBackupStatusStore(),
     onBackupNow: () async {
       final json = await _buildCurrentJson();
       await store.write(AutoBackupPolicy.fileNameFor(DateTime.now()), json);

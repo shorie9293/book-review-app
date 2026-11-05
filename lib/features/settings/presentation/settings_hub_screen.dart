@@ -11,7 +11,9 @@ import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:book_review_app/core/theme/text_scale_setting.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:book_review_app/features/about/presentation/about_screen.dart';
+import 'package:book_review_app/features/auto_backup/data/auto_backup_status_store.dart';
 import 'package:book_review_app/features/auto_backup/data/auto_backup_wiring.dart';
+import 'package:book_review_app/features/auto_backup/domain/auto_backup_status.dart';
 import 'package:book_review_app/features/backup/data/backup_csv_sharer.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/presentation/backup_screen.dart';
@@ -78,6 +80,9 @@ class SettingsHubScreen extends StatelessWidget {
   /// 静穏時間の保存先（未指定なら実装既定＝Hive）
   final QuietHoursRepository? quietHoursRepository;
 
+  /// 自動バックアップの状態の読み出し元（未指定なら警告バッジを出さない）
+  final AutoBackupStatusStore? autoBackupStatusStore;
+
   const SettingsHubScreen({
     super.key,
     this.themeMode = ThemeModeSetting.system,
@@ -100,6 +105,7 @@ class SettingsHubScreen extends StatelessWidget {
     this.crashLogRepository,
     this.crashLogBuilder,
     this.quietHoursRepository,
+    this.autoBackupStatusStore,
   });
 
   Widget _themeModeScreen(BuildContext _) => ThemeModeSettingsScreen(
@@ -269,14 +275,32 @@ class SettingsHubScreen extends StatelessWidget {
             subtitle: 'バージョン・ライセンス・問い合わせ',
             builder: aboutBuilder ?? (_) => const AboutScreen(),
           ),
-          _item(
-            context,
-            id: 'auto_backup',
-            icon: Icons.restore_page_outlined,
-            title: '自動バックアップ',
-            subtitle: '起動時の控えを一覧・復元・共有する',
-            builder: autoBackupBuilder ?? (_) => buildAutoBackupScreen(),
-          ),
+          if (autoBackupStatusStore == null)
+            _item(
+              context,
+              id: 'auto_backup',
+              icon: Icons.restore_page_outlined,
+              title: '自動バックアップ',
+              subtitle: '起動時の控えを一覧・復元・共有する',
+              builder: autoBackupBuilder ?? (_) => buildAutoBackupScreen(),
+            )
+          else
+            _AutoBackupStatusItem(
+              store: autoBackupStatusStore!,
+              builder: (status) => _item(
+                context,
+                id: 'auto_backup',
+                icon: status?.isDegraded == true
+                    ? Icons.warning_amber_outlined
+                    : Icons.restore_page_outlined,
+                title: '自動バックアップ',
+                subtitle: status?.isDegraded == true
+                    ? '自動バックアップに失敗しています'
+                        '（${status!.consecutiveFailures}回連続）'
+                    : '起動時の控えを一覧・復元・共有する',
+                builder: autoBackupBuilder ?? (_) => buildAutoBackupScreen(),
+              ),
+            ),
           _item(
             context,
             id: 'help',
@@ -289,4 +313,42 @@ class SettingsHubScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 自動バックアップの状態を読み出して項目を組み立てる小さな器。
+///
+/// 設定ハブ自体は StatelessWidget（const 構築）のままにし、
+/// 非同期の読み出しだけをこの子へ閉じ込める。
+class _AutoBackupStatusItem extends StatefulWidget {
+  const _AutoBackupStatusItem({required this.store, required this.builder});
+
+  final AutoBackupStatusStore store;
+  final Widget Function(AutoBackupStatus? status) builder;
+
+  @override
+  State<_AutoBackupStatusItem> createState() => _AutoBackupStatusItemState();
+}
+
+class _AutoBackupStatusItemState extends State<_AutoBackupStatusItem> {
+  AutoBackupStatus? _status;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    AutoBackupStatus? status;
+    try {
+      status = await widget.store.load();
+    } catch (_) {
+      status = null;
+    }
+    if (!mounted) return;
+    setState(() => _status = status);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(_status);
 }
