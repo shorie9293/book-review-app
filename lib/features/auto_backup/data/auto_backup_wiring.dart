@@ -19,6 +19,17 @@ Future<String> _buildCurrentJson() async {
   return const BackupService().exportJson(bundle);
 }
 
+/// 回復導線用: 現状をバックアップファイルとして1回書き出す。
+///
+/// 起動時自動バックアップと同じ「収集 → JSON化 → 保存先書込み」を再利用する。
+Future<void> exportBackupSnapshot() async {
+  final json = await _buildCurrentJson();
+  await FileAutoBackupStore().write(
+    AutoBackupPolicy.fileNameFor(DateTime.now()),
+    json,
+  );
+}
+
 /// 既存の手動バックアップ復元経路で JSON を適用する。
 Future<void> _applyJson(String json) async {
   final bundle = const BackupService().parse(json);

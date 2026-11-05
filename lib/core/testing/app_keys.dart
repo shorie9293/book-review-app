@@ -54,6 +54,17 @@ class AppKeys {
   /// アプリロックゲート: パスコード入力欄
   static const Key appLockGateField = Key('app_lock_gate_field');
 
+  /// アプリロックゲート: パスコード忘却時の回復導線
+  static const Key appLockForgotButton = Key('app_lock_forgot_button');
+
+  /// アプリロックゲート: 回復の確認語入力欄（ダイアログ内）
+  static const Key appLockRecoveryConfirmField =
+      Key('app_lock_recovery_confirm_field');
+
+  /// アプリロックゲート: 回復の実行ボタン（ダイアログ内）
+  static const Key appLockRecoveryConfirmButton =
+      Key('app_lock_recovery_confirm_button');
+
   /// アプリロック: 新しいパスコード入力欄
   static const Key appLockPasscodeField = Key('app_lock_passcode_field');
 
