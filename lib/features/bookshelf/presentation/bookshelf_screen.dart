@@ -35,6 +35,7 @@ import 'package:book_review_app/features/recommendation/presentation/recommendat
 import 'package:book_review_app/features/reminder/infrastructure/hive_quiet_hours_repository.dart';
 import 'package:book_review_app/features/reminder/infrastructure/notification_permission_requester.dart';
 import 'package:book_review_app/features/reminder/presentation/reading_reminder_settings_screen.dart';
+import 'package:book_review_app/features/review/presentation/review_search_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
 import 'package:book_review_app/screens/reduce_motion_settings_screen.dart';
@@ -63,6 +64,9 @@ class BookshelfScreen extends StatefulWidget {
 
   /// 読書時間画面のリポジトリ（未指定なら Hive 実装を使う・試練用差し替え口）
   final ReadingSessionRepository? readingSessionRepositoryOverride;
+
+  /// レビュー横断検索画面のビルダー（未指定なら既定の [ReviewSearchScreen] を表示）
+  final WidgetBuilder? reviewSearchBuilder;
 
   /// クロスアプリ連携の userId 保管庫（未指定ならバックアップ画面に導線を出さない）
   final CrossAppLinkRepository? crossAppLinkRepository;
@@ -104,6 +108,7 @@ class BookshelfScreen extends StatefulWidget {
     this.queueRepository,
     this.loanRepository,
     this.readingSessionRepositoryOverride,
+    this.reviewSearchBuilder,
     this.crossAppLinkRepository,
     this.crossAppRewardLogRepository,
     this.rewardExportCoordinator,
@@ -656,47 +661,99 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  void _openReviewSearch() {
+    final builder = widget.reviewSearchBuilder;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) =>
+            builder?.call(context) ??
+            ReviewSearchScreen(
+              bookRepository: widget.repository,
+              reviewRepository: widget.reviewRepository!,
+            ),
+      ),
+    );
+  }
+
   Widget _buildSearchSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: SemanticHelper.textField(
-                  testId: 'bookshelf_txt_isbn_search',
-                  label: 'ISBNで検索',
-                  child: TextField(
-                    key: const Key('isbn_search_field'),
-                    controller: _isbnController,
-                    decoration: const InputDecoration(
-                      labelText: 'ISBNで検索',
-                      hintText: '978-4-7741-8907-9',
-                      border: OutlineInputBorder(),
+          // レビュー横断検索への導線。広い画面ではISBN検索行と同一行に並べ、
+          // 狭い画面ではISBN入力欄の幅を確保するため直下に縦積みする。
+          LayoutBuilder(
+            builder: (context, constraints) {
+              Widget searchRow({Widget? trailing}) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: SemanticHelper.textField(
+                        testId: 'bookshelf_txt_isbn_search',
+                        label: 'ISBNで検索',
+                        child: TextField(
+                          key: const Key('isbn_search_field'),
+                          controller: _isbnController,
+                          decoration: const InputDecoration(
+                            labelText: 'ISBNで検索',
+                            hintText: '978-4-7741-8907-9',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.text,
+                        ),
+                      ),
                     ),
-                    keyboardType: TextInputType.text,
-                  ),
+                    const SizedBox(width: 8),
+                    SemanticHelper.interactive(
+                      testId: 'bookshelf_btn_isbn_search',
+                      label: 'ISBNで書籍を検索',
+                      child: ElevatedButton(
+                        key: const Key('isbn_search_button'),
+                        onPressed: _isSearching ? null : _searchByIsbn,
+                        child: _isSearching
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('検索'),
+                      ),
+                    ),
+                    if (trailing != null) ...[
+                      const SizedBox(width: 8),
+                      trailing,
+                    ],
+                  ],
+                );
+              }
+
+              // 後方互換: レビューリポジトリ未指定なら導線を出さない
+              if (widget.reviewRepository == null) return searchRow();
+
+              final reviewButton = SemanticHelper.interactive(
+                testId: 'review_search_open_button',
+                label: 'レビューを検索',
+                child: OutlinedButton.icon(
+                  key: AppKeys.reviewSearchOpenButton,
+                  onPressed: _openReviewSearch,
+                  icon: const Icon(Icons.search),
+                  label: const Text('レビューを検索'),
                 ),
-              ),
-              const SizedBox(width: 8),
-              SemanticHelper.interactive(
-                testId: 'bookshelf_btn_isbn_search',
-                label: 'ISBNで書籍を検索',
-                child: ElevatedButton(
-                  key: const Key('isbn_search_button'),
-                  onPressed: _isSearching ? null : _searchByIsbn,
-                  child: _isSearching
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('検索'),
-                ),
-              ),
-            ],
+              );
+
+              if (constraints.maxWidth >= 520) {
+                return searchRow(trailing: reviewButton);
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  searchRow(),
+                  const SizedBox(height: 8),
+                  reviewButton,
+                ],
+              );
+            },
           ),
           if (_isSearching)
             const Padding(

@@ -575,4 +575,28 @@ class AppKeys {
 
   /// アプリロック: 復帰時の再施錠猶予（秒）ドロップダウン
   static const Key appLockGraceDropdown = Key('app_lock_grace_dropdown');
+
+  /// レビュー横断検索画面（Scaffold）
+  static const Key reviewSearchScreen = Key('review_search_screen');
+
+  /// レビュー横断検索への導線（本棚の検索セクション）
+  static const Key reviewSearchOpenButton = Key('review_search_open_button');
+
+  /// レビュー横断検索: 検索欄
+  static const Key reviewSearchField = Key('review_search_field');
+
+  /// レビュー横断検索: 件数ラベル
+  static const Key reviewSearchCount = Key('review_search_count');
+
+  /// レビュー横断検索: 0件時の空状態
+  static const Key reviewSearchEmpty = Key('review_search_empty');
+
+  /// レビュー横断検索: 読み込み失敗の表示
+  static const Key reviewSearchError = Key('review_search_error');
+
+  /// レビュー横断検索: 読み込み失敗からの再試行ボタン
+  static const Key reviewSearchRetry = Key('review_search_retry');
+
+  /// レビュー横断検索: 指定レビューの結果行
+  static Key reviewSearchRow(String id) => Key('review_search_row_$id');
 }
