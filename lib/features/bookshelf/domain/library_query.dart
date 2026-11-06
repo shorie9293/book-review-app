@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/text/kana_fold.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
@@ -120,6 +121,12 @@ class LibraryQueryService {
     return lower.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
+  /// 検索用の正規化: [normalize] にかな表記ゆれ吸収（[foldKana]）を重ねたもの。
+  ///
+  /// クエリ側と書名/著者側の両方に適用し、ひらがな⇄カタカナ・半角カナを同一視する。
+  /// [normalize] 自体の戻り値は変えない（既存の互換維持）。
+  static String normalizeForSearch(String raw) => foldKana(normalize(raw));
+
   /// [books] を [query] に従って絞り込み・並び替えした新しいリストを返す。
   /// 入力リストは変更しない。同順の要素は元のindex昇順（安定ソート）。
   static List<Book> apply(List<Book> books, LibraryQuery query) {
@@ -131,13 +138,13 @@ class LibraryQueryService {
 
     Iterable<(int, Book)> result = indexed;
 
-    // テキスト絞り込み
-    final text = normalize(query.text);
+    // テキスト絞り込み（クエリ側・書名/著者側の両方でかな表記ゆれを吸収）
+    final text = normalizeForSearch(query.text);
     if (text.isNotEmpty) {
       result = result.where((entry) {
         final (i, book) = entry;
-        final title = normalize(book.title);
-        final author = normalize(book.author);
+        final title = normalizeForSearch(book.title);
+        final author = normalizeForSearch(book.author);
         return title.contains(text) || author.contains(text);
       });
     }

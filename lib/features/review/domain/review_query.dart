@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import 'package:book_review_app/core/text/kana_fold.dart';
 import 'package:book_review_app/domain/models/review.dart';
 
 /// レビュー横断検索の検索条件（不変）
@@ -111,15 +112,21 @@ class ReviewQueryService {
     return sb.toString().toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
+  /// 検索用の正規化: [normalize] にかな表記ゆれ吸収（[foldKana]）を重ねたもの。
+  ///
+  /// クエリ語・本文・書名のすべてに適用し、ひらがな⇄カタカナ・半角カナを同一視する。
+  /// [normalize] 自体の戻り値は変えない（既存の互換維持）。
+  static String normalizeForSearch(String input) => foldKana(normalize(input));
+
   /// 検索語を [Review.text] か書名に含むか（正規化後の部分一致）。
   ///
   /// 空白区切りの複数語は AND（すべての語がいずれかの対象に含まれること）。
   /// 空/空白のみの検索語なら常に true。
   static bool matchesText(Review review, String? bookTitle, String text) {
-    final q = normalize(text);
+    final q = normalizeForSearch(text);
     if (q.isEmpty) return true;
-    final body = normalize(review.text);
-    final title = normalize(bookTitle ?? '');
+    final body = normalizeForSearch(review.text);
+    final title = normalizeForSearch(bookTitle ?? '');
     for (final term in q.split(' ')) {
       if (term.isEmpty) continue;
       if (!body.contains(term) && !title.contains(term)) return false;
