@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/text/japanese_collation.dart';
 import 'package:book_review_app/core/text/kana_fold.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
@@ -213,10 +214,15 @@ class LibraryQueryService {
     return a.compareTo(b);
   }
 
+  /// 書名比較。nullは末尾に置く（両方nullは同順）。
+  ///
+  /// 非null同士は [compareJapaneseTitles] による近似かな順
+  /// （ひらがな/カタカナ/半角カナを同一視し、かな → 漢字等の順）。
   static int _compareNullableString(String? a, String? b) {
-    if (a == null) return 0;
-    if (b == null) return 0;
-    return a.compareTo(b);
+    if (a == null && b == null) return 0;
+    if (a == null) return 1; // a(null)は末尾
+    if (b == null) return -1;
+    return compareJapaneseTitles(a, b);
   }
 
   /// nullは末尾に置く。それ以外は数値比較。
