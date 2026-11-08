@@ -508,6 +508,13 @@ class AppKeys {
   static Key locationFilterChip(String location) =>
       Key('library_location_chip_$location');
 
+  /// 本棚: 検索語履歴チップの並び
+  static const Key librarySearchHistoryChips = Key('library_search_history_chips');
+
+  /// 本棚: 指定検索語の履歴チップ
+  static Key librarySearchHistoryChip(String term) =>
+      Key('library_search_history_chip_$term');
+
   /// 貸出管理: 返却期限の通知設定セクション
   static const Key loanDueReminderSection = Key('loan_due_reminder_section');
 

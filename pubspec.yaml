@@ -46,6 +46,7 @@ dependencies:
   timezone: ^0.9.4
   crypto: ^3.0.7
   path_provider: ^2.1.0
+  shared_preferences: ^2.5.3
   takamagahara_ui:
     path: ../../packages/takamagahara_ui
 
