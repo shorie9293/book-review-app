@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/domain/models/book.dart';
+import 'package:book_review_app/domain/models/book_note.dart';
+import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
+import 'package:book_review_app/features/bookshelf/data/book_deletion_service.dart';
 import 'package:book_review_app/features/bookshelf/data/book_search_service.dart';
+import 'package:book_review_app/features/bookshelf/domain/book_deletion.dart';
 import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
 import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
 import 'package:book_review_app/features/backup/data/backup_csv_sharer.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
+import 'package:book_review_app/features/backup/data/hive_orphan_scan_loader.dart';
 import 'package:book_review_app/features/backup/presentation/backup_screen.dart';
 import 'package:book_review_app/features/crossapp/data/book_reward_export_coordinator.dart';
 import 'package:book_review_app/features/crossapp/data/cross_app_link_repository.dart';
@@ -312,6 +317,15 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
 
   /// エクスポート／バックアップ画面を開く。
   Future<void> _openBackup() async {
+    final reviewRepository = widget.reviewRepository;
+    final noteRepository = widget.noteRepository;
+    final orphanCleanupService =
+        reviewRepository == null || noteRepository == null
+            ? null
+            : BookDeletionService(
+                deleteReviewById: (id) => reviewRepository.deleteReview(id),
+                deleteNoteById: (id) => noteRepository.deleteNote(id),
+              );
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => BackupScreen(
@@ -323,6 +337,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           crossAppLinkRepository: widget.crossAppLinkRepository,
           crossAppRewardLogRepository: widget.crossAppRewardLogRepository,
           csvSharer: const SharePlusBackupCsvSharer(),
+          allReviewsLoader: loadAllReviewsFromHive,
+          orphanCleanupService: orphanCleanupService,
         ),
       ),
     );
@@ -888,10 +904,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                   label: '書籍「${book.title}」を本棚から削除',
                   child: IconButton(
                     icon: const Icon(Icons.delete_outline),
-                    onPressed: () async {
-                      await widget.repository.removeBook(book.id);
-                      await _loadBooks();
-                    },
+                    onPressed: () => _confirmAndDeleteBook(book),
                   ),
                 ),
               ],
@@ -901,6 +914,86 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
           );
         },
     );
+  }
+
+  /// 書籍を本棚から削除する（確認ダイアログ→添付データの連鎖削除）。
+  ///
+  /// 添付（レビュー・メモ）の取得が失敗しても削除導線は止めない
+  /// （空リストへフォールバックし、警告文なしで確認へ進む）。
+  Future<void> _confirmAndDeleteBook(Book book) async {
+    final reviewRepository = widget.reviewRepository;
+    final noteRepository = widget.noteRepository;
+
+    var reviews = <Review>[];
+    if (reviewRepository != null) {
+      try {
+        reviews = await reviewRepository.getReviewsByBookId(book.id);
+      } catch (_) {
+        reviews = <Review>[];
+      }
+    }
+    var notes = <BookNote>[];
+    if (noteRepository != null) {
+      try {
+        notes = await noteRepository.getNotesByBookId(book.id);
+      } catch (_) {
+        notes = <BookNote>[];
+      }
+    }
+
+    final plan = BookDeletionPlan.build(
+      bookId: book.id,
+      reviews: reviews,
+      notes: notes,
+    );
+    if (!mounted) return;
+
+    final warning = plan.warningSuffix;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('書籍の削除'),
+        content: Text(
+          warning == null
+              ? '書籍「${book.title}」を本棚から削除しますか？'
+              : '書籍「${book.title}」を本棚から削除しますか？\n$warning',
+        ),
+        actions: [
+          TextButton(
+            key: const Key('book_delete_cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            key: const Key('book_delete_confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final service = BookDeletionService(
+      deleteReviews: reviewRepository == null
+          ? null
+          : (reviewIds) async {
+              for (final id in reviewIds) {
+                await reviewRepository.deleteReview(id);
+              }
+            },
+      deleteNotesByBookId: noteRepository == null
+          ? null
+          : (bookId) => noteRepository.deleteNotesByBookId(bookId),
+      deleteBook: (bookId) => widget.repository.removeBook(bookId),
+    );
+    await service.deleteBookWithAttachments(
+      bookId: book.id,
+      plan: plan,
+      reviewIds: [for (final review in reviews) review.id],
+    );
+    await _loadBooks();
   }
 
   void _navigateToReviews(Book book) {

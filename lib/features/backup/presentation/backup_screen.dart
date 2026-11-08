@@ -6,6 +6,9 @@ import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/domain/backup_models.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
 import 'package:book_review_app/features/backup/presentation/backup_keys.dart';
+import 'package:book_review_app/domain/models/review.dart';
+import 'package:book_review_app/features/bookshelf/data/book_deletion_service.dart';
+import 'package:book_review_app/features/bookshelf/domain/book_deletion.dart';
 import 'package:book_review_app/features/crossapp/data/cross_app_link_repository.dart';
 import 'package:book_review_app/features/crossapp/data/reward_export_log_repository.dart';
 import 'package:book_review_app/features/crossapp/presentation/cross_app_link_keys.dart';
@@ -34,6 +37,12 @@ class BackupScreen extends StatefulWidget {
   /// 蔵書 CSV の共有口（未指定なら「CSVを共有」ボタンを出さない）
   final BackupCsvSharer? csvSharer;
 
+  /// 全レビュー読み出し口（未指定なら「保存先を失ったデータ」節を出さない）
+  final Future<List<Review>> Function()? allReviewsLoader;
+
+  /// 孤児データの刈り取りサービス（未指定なら同節を出さない）
+  final BookDeletionService? orphanCleanupService;
+
   const BackupScreen({
     super.key,
     required this.repository,
@@ -42,6 +51,8 @@ class BackupScreen extends StatefulWidget {
     this.crossAppLinkRepository,
     this.crossAppRewardLogRepository,
     this.csvSharer,
+    this.allReviewsLoader,
+    this.orphanCleanupService,
   });
 
   static Future<void> _defaultClipboardWriter(String value) {
@@ -59,6 +70,9 @@ class _BackupScreenState extends State<BackupScreen> {
   bool _isLoading = true;
   String? _loadError;
   BackupBundle? _bundle;
+
+  /// 保存先を失ったデータ（null は未検出・検出失敗＝節を出さない）
+  OrphanData? _orphans;
 
   /// エクスポート節・復元節の状態
   String? _exportedJson;
@@ -82,12 +96,15 @@ class _BackupScreenState extends State<BackupScreen> {
     setState(() {
       _isLoading = true;
       _loadError = null;
+      _orphans = null;
     });
     try {
       final bundle = await widget.repository.collect();
+      final orphans = await _detectOrphans(bundle);
       if (!mounted) return;
       setState(() {
         _bundle = bundle;
+        _orphans = orphans;
         _isLoading = false;
       });
     } catch (e) {
@@ -96,6 +113,24 @@ class _BackupScreenState extends State<BackupScreen> {
         _loadError = 'データの読み込みに失敗しました: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  /// 全レビューを読み、蔵書から参照されていないデータを検出する。
+  ///
+  /// [BackupScreen.allReviewsLoader] が未指定・失敗時は null（節を出さない）。
+  Future<OrphanData?> _detectOrphans(BackupBundle bundle) async {
+    final loader = widget.allReviewsLoader;
+    if (loader == null) return null;
+    try {
+      final reviews = await loader();
+      return OrphanData.detect(
+        books: bundle.books,
+        reviews: reviews,
+        notes: bundle.notes,
+      );
+    } catch (_) {
+      return null;
     }
   }
 
@@ -269,6 +304,17 @@ class _BackupScreenState extends State<BackupScreen> {
       ]);
     }
 
+    final orphans = _orphans;
+    final orphanCleanupService = widget.orphanCleanupService;
+    if (orphans != null &&
+        !orphans.isEmpty &&
+        orphanCleanupService != null) {
+      children.addAll([
+        const Divider(height: 32),
+        _buildOrphanSection(orphans, orphanCleanupService),
+      ]);
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -301,6 +347,71 @@ class _BackupScreenState extends State<BackupScreen> {
         ),
       ),
     );
+  }
+
+  /// 保存先を失ったデータ（孤児レビュー・メモ）の節。
+  ///
+  /// 表示のみで、自動削除は行わない。ユーザーが「刈り取る」を押した時だけ動く。
+  Widget _buildOrphanSection(
+    OrphanData orphans,
+    BookDeletionService service,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('保存先を失ったデータ', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(orphans.summaryLabel),
+        const SizedBox(height: 4),
+        const Text('本棚から消えた本に属するデータです。バックアップには含まれません。'),
+        const SizedBox(height: 8),
+        ElevatedButton.icon(
+          key: const Key('orphan_cleanup_button'),
+          onPressed: () => _confirmOrphanCleanup(orphans, service),
+          icon: const Icon(Icons.delete_sweep),
+          label: const Text('刈り取る'),
+        ),
+      ],
+    );
+  }
+
+  /// 確認ダイアログを経て孤児データを刈り取る。
+  Future<void> _confirmOrphanCleanup(
+    OrphanData orphans,
+    BookDeletionService service,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('保存先を失ったデータの削除'),
+        content: Text(
+          '${orphans.summaryLabel} を削除します。元に戻せません。よろしいですか？',
+        ),
+        actions: [
+          TextButton(
+            key: const Key('orphan_cleanup_cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            key: const Key('orphan_cleanup_confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    final report = await service.deleteOrphans(orphans);
+    if (!mounted) return;
+    final deleted = report.deletedReviews + report.deletedNotes;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('刈り取り完了: 成功 $deleted件 / 失敗 ${report.failures.length}件'),
+      ),
+    );
+    await _reload();
   }
 
   Widget _buildSummaryCard(BackupBundle bundle) {

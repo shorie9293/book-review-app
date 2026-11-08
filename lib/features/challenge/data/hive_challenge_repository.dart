@@ -9,7 +9,7 @@ import 'dart:convert';
 /// 全レビュー一覧はレビュー機能と共有する `reviews` ボックス（`Box<String>`・JSON）から読む。
 class HiveChallengeRepository implements ChallengeRepository {
   static const String _targetBoxName = 'challenge';
-  static const String _reviewsBoxName = 'reviews';
+  static const String reviewsBoxName = 'reviews';
   static const String _targetKey = 'annual_target';
 
   late Box _targetBox;
@@ -18,7 +18,7 @@ class HiveChallengeRepository implements ChallengeRepository {
   /// 初期化（テスト時は明示的に呼び出す）
   Future<void> init({String? boxName}) async {
     _targetBox = await Hive.openBox(boxName ?? _targetBoxName);
-    _reviewsBox = await Hive.openBox<String>(_reviewsBoxName);
+    _reviewsBox = await Hive.openBox<String>(reviewsBoxName);
   }
 
   /// JSON文字列からReviewモデルに変換（reviews ボックスの共有スキーマ）
