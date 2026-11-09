@@ -59,6 +59,35 @@ jobs:
 
       - name: 📦 Get dependencies
         run: flutter pub get
+      - name: 🔧 Gradle mirror init (GitHub リリースCDN 504 回避)
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/mirror.gradle <<'EOF'
+          beforeSettings { settings ->
+              settings.pluginManagement.repositories {
+                  google()
+                  maven { url 'https://maven.aliyun.com/repository/public' }
+                  maven { url 'https://repo1.maven.org/maven2' }
+                  gradlePluginPortal()
+                  mavenCentral()
+              }
+              settings.dependencyResolutionManagement.repositories {
+                  google()
+                  maven { url 'https://maven.aliyun.com/repository/public' }
+                  maven { url 'https://repo1.maven.org/maven2' }
+                  mavenCentral()
+              }
+          }
+          gradle.beforeProject { project ->
+              if (project.rootProject.name != 'gradle') {
+                  project.repositories {
+                      maven { url 'https://maven.aliyun.com/repository/public' }
+                      maven { url 'https://repo1.maven.org/maven2' }
+                  }
+              }
+          }
+          EOF
+          cat ~/.gradle/init.d/mirror.gradle
 
       - name: 🔐 Decode Keystore
         run: |
