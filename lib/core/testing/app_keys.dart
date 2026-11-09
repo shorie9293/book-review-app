@@ -582,6 +582,10 @@ class AppKeys {
   /// 自動バックアップ: 復元確認ダイアログのキャンセルボタン
   static const Key autoBackupRestoreCancel = Key('auto_backup_restore_cancel');
 
+  /// 自動バックアップ: 復元確認ダイアログの「設定も戻す」チェックボックス
+  static const Key autoBackupRestoreIncludeSettings =
+      Key('auto_backup_restore_include_settings');
+
   /// 自動バックアップ: 最終成功時刻の表示
   static const Key autoBackupLastSuccess = Key('auto_backup_last_success');
 

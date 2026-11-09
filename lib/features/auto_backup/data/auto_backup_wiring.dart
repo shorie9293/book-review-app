@@ -9,6 +9,8 @@ import 'package:book_review_app/features/auto_backup/presentation/auto_backup_sc
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
+import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
+import 'package:book_review_app/features/loan/infrastructure/loan_due_reminder_resync_factory.dart';
 import 'package:book_review_app/features/notes/data/hive_book_note_repository.dart';
 import 'package:book_review_app/features/review/data/hive_review_repository.dart';
 
@@ -31,10 +33,26 @@ Future<void> exportBackupSnapshot() async {
 }
 
 /// 既存の手動バックアップ復元経路で JSON を適用する。
-Future<void> _applyJson(String json) async {
+///
+/// [includeSettings] が false なら控えの設定（テーマ・文字サイズ等）は
+/// 適用せず記録だけを戻す。
+Future<void> _applyJson(String json, {bool includeSettings = true}) async {
   final bundle = const BackupService().parse(json);
   final repository = await _openBackupRepository();
-  await repository.restore(bundle);
+  await repository.restore(bundle, includeSettings: includeSettings);
+}
+
+/// 設定を戻した後の通知の再予約（返却期限リマインダーの組み直し）。
+///
+/// 設定の適用で端末の見え方・通知条件が変わり得るため、既存の
+/// 「返却期限リマインダー再同期」をそのまま1回走らせる。
+/// 失敗しても復元結果は落とさない（呼び出し側が投げっぱなしで握る）。
+Future<void> _resyncNotificationsAfterSettings() async {
+  final loanRepository = HiveBookLoanRepository();
+  await loanRepository.init();
+  await createHiveLoanDueReminderResync(
+    loanRepository: loanRepository,
+  ).trigger();
 }
 
 Future<HiveBackupRepository> _openBackupRepository() async {
@@ -60,6 +78,8 @@ Widget buildAutoBackupScreen() {
       store: store,
       buildCurrentJson: _buildCurrentJson,
       applyBackup: _applyJson,
+      applyBackupWithOptions: _applyJson,
+      onSettingsRestored: _resyncNotificationsAfterSettings,
     ),
     sharer: SharePlusAutoBackupSharer(),
     statusStore: FileAutoBackupStatusStore(),

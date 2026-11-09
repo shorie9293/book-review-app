@@ -22,3 +22,19 @@ abstract interface class AutoBackupRestorer {
   /// [fileName] の世代を復元する（例外は投げず結果に畳む）。
   Future<AutoBackupRestoreResult> restore(String fileName);
 }
+
+/// 控えの設定（テーマ・文字サイズ等）も戻すか選べる復元器。
+///
+/// [AutoBackupRestorer] を継承した**別インターフェース**にしてある。
+/// 既存の実装・フェイクは [AutoBackupRestorer] のままで動き続け、
+/// 画面は「この型を実装している時だけ」設定の選択UIを出す。
+abstract interface class AutoBackupRestorerWithOptions
+    implements AutoBackupRestorer {
+  /// [fileName] の世代を復元する。
+  ///
+  /// [includeSettings] が false なら控えの設定は適用せず、記録だけを戻す。
+  Future<AutoBackupRestoreResult> restoreWithOptions(
+    String fileName, {
+    bool includeSettings = true,
+  });
+}

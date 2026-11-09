@@ -2,6 +2,7 @@ import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/models/review.dart';
+import 'package:book_review_app/features/backup/domain/backup_settings_spec.dart';
 
 /// バックアップバンドルのスキーマバージョン。
 ///
@@ -19,6 +20,11 @@ class BackupBundle {
   final List<Review> reviews;
   final List<BookNote> notes;
 
+  /// 設定（テーマ・文字サイズ等）。旧控えには無い（任意・additive）。
+  ///
+  /// null のとき [toJson] は従来と完全同一の出力になる。
+  final BackupSettingsBundle? settings;
+
   /// [schemaVersion] が1未満は不正（[ArgumentError]）。
   BackupBundle({
     this.schemaVersion = kBackupSchemaVersion,
@@ -26,6 +32,7 @@ class BackupBundle {
     required this.books,
     required this.reviews,
     required this.notes,
+    this.settings,
   }) {
     if (schemaVersion < 1) {
       throw ArgumentError.value(
@@ -42,6 +49,7 @@ class BackupBundle {
         'books': books.map(_bookToJson).toList(),
         'reviews': reviews.map(_reviewToJson).toList(),
         'notes': notes.map((note) => note.toJson()).toList(),
+        if (settings != null) 'settings': settings!.toJson(),
       };
 
   /// JSON マップから復元する。
@@ -66,6 +74,8 @@ class BackupBundle {
       books: _listOfMaps(map['books']).map(_bookFromJson).toList(),
       reviews: _listOfMaps(map['reviews']).map(_reviewFromJson).toList(),
       notes: _listOfMaps(map['notes']).map(BookNote.fromJson).toList(),
+      // 設定は任意項目。欠落・破損でも本体の復元は成功させる。
+      settings: BackupSettingsBundle.tryFromJson(map['settings']),
     );
   }
 

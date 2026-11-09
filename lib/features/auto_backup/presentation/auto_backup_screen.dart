@@ -133,32 +133,68 @@ class _AutoBackupScreenState extends State<AutoBackupScreen> {
     final restorer = widget.restorer;
     if (restorer == null || !row.restorable) return;
 
+    // 設定（テーマ・文字サイズ等）を戻せる復元器のときだけ選択肢を出す。
+    final withOptions =
+        restorer is AutoBackupRestorerWithOptions ? restorer : null;
+    var includeSettings = true;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('この世代を復元しますか？'),
-        content: Text(
-          '${row.displayLabel}\n現在のデータは復元前に自動で保存されます。',
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('この世代を復元しますか？'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${row.displayLabel}\n現在のデータは復元前に自動で保存されます。',
+              ),
+              if (withOptions != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: SemanticHelper.interactive(
+                    testId: 'auto_backup_restore_include_settings',
+                    label: '設定も戻す（テーマ・文字サイズ）',
+                    child: CheckboxListTile(
+                      key: AppKeys.autoBackupRestoreIncludeSettings,
+                      value: includeSettings,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      dense: true,
+                      title: const Text('設定も戻す（テーマ・文字サイズ）'),
+                      onChanged: (value) => setDialogState(
+                          () => includeSettings = value ?? false),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              key: AppKeys.autoBackupRestoreCancel,
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('キャンセル'),
+            ),
+            FilledButton(
+              key: AppKeys.autoBackupRestoreConfirm,
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('復元する'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            key: AppKeys.autoBackupRestoreCancel,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          FilledButton(
-            key: AppKeys.autoBackupRestoreConfirm,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('復元する'),
-          ),
-        ],
       ),
     );
     if (confirmed != true || !mounted) return;
 
     setState(() => _busy = true);
     try {
-      final result = await restorer.restore(row.entry.fileName);
+      final result = withOptions == null
+          ? await restorer.restore(row.entry.fileName)
+          : await withOptions.restoreWithOptions(
+              row.entry.fileName,
+              includeSettings: includeSettings,
+            );
       _showMessage(result.message);
     } catch (_) {
       _showMessage('復元に失敗しました');
@@ -312,8 +348,7 @@ class _AutoBackupScreenState extends State<AutoBackupScreen> {
                             ),
                           if (hasSharer)
                             SemanticHelper.interactive(
-                              testId:
-                                  'auto_backup_share_${row.entry.fileName}',
+                              testId: 'auto_backup_share_${row.entry.fileName}',
                               label: '${row.sizeLabel}の世代を共有する',
                               child: IconButton(
                                 key:

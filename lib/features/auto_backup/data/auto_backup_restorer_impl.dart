@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:book_review_app/features/auto_backup/data/auto_backup_store.dart';
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_policy.dart';
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_presenter.dart';
@@ -8,7 +10,10 @@ import 'package:book_review_app/features/auto_backup/domain/auto_backup_restorer
 /// 手順: 読み出し → 復元可否判定 → **現状を強制保存** → 既存の復元経路で適用。
 /// 現状保存を先に行うことで、復元に失敗しても直前の状態が1世代残る。
 /// 例外は握り、[AutoBackupRestoreResult.ok] を false にして返す。
-class AutoBackupRestorerImpl implements AutoBackupRestorer {
+///
+/// 控えに設定（テーマ・文字サイズ等）が載っている世代では、
+/// [restoreWithOptions] の `includeSettings` で設定の適用可否を選べる。
+class AutoBackupRestorerImpl implements AutoBackupRestorerWithOptions {
   /// 自動バックアップの保管先。
   final AutoBackupStore store;
 
@@ -17,6 +22,15 @@ class AutoBackupRestorerImpl implements AutoBackupRestorer {
 
   /// 既存のバックアップ復元経路で JSON を適用する。
   final Future<void> Function(String json) applyBackup;
+
+  /// 設定の適用可否まで渡せる復元経路（未指定なら [applyBackup] を使う）。
+  final Future<void> Function(String json, {bool includeSettings})?
+      applyBackupWithOptions;
+
+  /// 設定を適用した後の後始末（通知の再予約など）。
+  ///
+  /// 投げっぱなしで呼び、例外は握る（復元の成否に影響させない）。
+  final Future<void> Function()? onSettingsRestored;
 
   /// 現在時刻（世代名の決定に使う）。
   final DateTime Function() _now;
@@ -29,13 +43,21 @@ class AutoBackupRestorerImpl implements AutoBackupRestorer {
     required this.store,
     required this.buildCurrentJson,
     required this.applyBackup,
-    AutoBackupPolicy policy = const AutoBackupPolicy(),
+    this.applyBackupWithOptions,
+    this.onSettingsRestored,
+    this.policy = const AutoBackupPolicy(),
     DateTime Function()? now,
-  })  : policy = policy,
-        _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   @override
-  Future<AutoBackupRestoreResult> restore(String fileName) async {
+  Future<AutoBackupRestoreResult> restore(String fileName) =>
+      restoreWithOptions(fileName);
+
+  @override
+  Future<AutoBackupRestoreResult> restoreWithOptions(
+    String fileName, {
+    bool includeSettings = true,
+  }) async {
     String? safetyFileName;
     try {
       final content = await store.read(fileName);
@@ -52,7 +74,19 @@ class AutoBackupRestorerImpl implements AutoBackupRestorer {
       final currentJson = await buildCurrentJson();
       await store.write(safetyFileName, currentJson);
 
-      await applyBackup(content!);
+      final withOptions = applyBackupWithOptions;
+      if (withOptions == null) {
+        await applyBackup(content!);
+      } else {
+        await withOptions(content!, includeSettings: includeSettings);
+      }
+
+      if (includeSettings) {
+        final hook = onSettingsRestored;
+        if (hook != null) {
+          unawaited(_runQuietly(hook));
+        }
+      }
       return AutoBackupRestoreResult(
         ok: true,
         message: 'バックアップを復元しました',
@@ -64,6 +98,15 @@ class AutoBackupRestorerImpl implements AutoBackupRestorer {
         message: '復元に失敗しました',
         safetyFileName: safetyFileName,
       );
+    }
+  }
+
+  /// 後始末を投げっぱなしで実行し、例外は握る。
+  Future<void> _runQuietly(Future<void> Function() hook) async {
+    try {
+      await hook();
+    } catch (_) {
+      // 設定は復元済み。通知の再予約失敗で復元結果を落とさない。
     }
   }
 }
