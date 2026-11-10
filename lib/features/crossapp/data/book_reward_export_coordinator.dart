@@ -1,3 +1,5 @@
+import 'package:book_review_app/core/infrastructure/shared_file_store.dart';
+import 'package:book_review_app/core/logging/app_logger.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/features/crossapp/data/book_reward_event_exporter.dart';
 import 'package:book_review_app/features/crossapp/data/cross_app_link_repository.dart';
@@ -10,6 +12,8 @@ import 'package:uuid/uuid.dart';
 /// 読了遷移のときだけ「userId 確保 → 読了冊数算出 → イベント生成 →
 /// JSONL 追記 → 送信済み記録」を順に行う。
 /// best-effort が原則で、いかなる例外も外へ漏らさない（UI を止めない）。
+/// ただし**無音にはしない**: 共有ストレージの失敗（[SharedStorageException]）は
+/// warn に1行残す。
 class BookRewardExportCoordinator {
   BookRewardExportCoordinator({
     required CrossAppLinkRepository linkRepository,
@@ -71,8 +75,13 @@ class BookRewardExportCoordinator {
 
       await _logRepository.markSent(sentKey);
       return true;
-    } catch (_) {
-      // best-effort: 報酬連携の失敗でアプリを落とさない
+    } on SharedStorageException catch (e) {
+      // 共有ストレージの失敗は「連携失敗」として warn に残し、読了処理は止めない。
+      appLog.warn('[BookRewardExportCoordinator] 共有ストレージへの追記失敗', e);
+      return false;
+    } catch (e) {
+      // best-effort: 報酬連携の失敗でアプリを落とさない（無音にはしない）。
+      appLog.warn('[BookRewardExportCoordinator] 書き出し失敗', e);
       return false;
     }
   }

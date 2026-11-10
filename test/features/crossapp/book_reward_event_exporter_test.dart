@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:book_review_app/core/infrastructure/shared_file_store.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/features/crossapp/data/book_reward_event_exporter.dart';
@@ -28,11 +29,15 @@ Map<String, dynamic> _event({String eventId = 'evt-1'}) {
 }
 
 void main() {
-  test('既定パスは rpg-task 契約と一致する', () {
+  test('共有フォルダ直下のファイル名は5現世の契約と一致する', () {
+    // 直書きパスの定数は廃止した。実機の保存先は SAF で選ばれたフォルダで、
+    // Dart 側は SharedFileStore が解決する（Android 実機では SAF）。
     expect(
-      BookRewardEventExporter.kDefaultBookReviewEventsPath,
-      '/data/local/tmp/takamagahara_shared/book_review_reward_events.jsonl',
+      BookRewardEventExporter.fileName,
+      SharedCrossAppFiles.bookReviewRewardEvents,
     );
+    expect(BookRewardEventExporter.fileName, 'book_review_reward_events.jsonl');
+    expect(const BookRewardEventExporter().filePath, isNull);
   });
 
   group('lineWriter 注入', () {
@@ -40,7 +45,7 @@ void main() {
       final written = <String>[];
       final exporter = BookRewardEventExporter(
         lineWriter: (path, line) async {
-          expect(path, BookRewardEventExporter.kDefaultBookReviewEventsPath);
+          expect(path, BookRewardEventExporter.fileName);
           written.add(line);
         },
       );

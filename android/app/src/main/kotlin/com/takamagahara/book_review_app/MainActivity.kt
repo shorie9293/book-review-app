@@ -8,6 +8,10 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+
+    /// 現世をまたぐ共有フォルダ（SAF）の橋渡し。onActivityResult で結果を受ける。
+    private var sharedStorageBridge: SharedStorageBridge? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -29,5 +33,17 @@ class MainActivity : FlutterActivity() {
                     result.notImplemented()
                 }
             }
+
+        // 共有ストレージ（SAF）チャネル。フォルダ選択は ACTION_OPEN_DOCUMENT_TREE で
+        // 行うため、結果は onActivityResult 経由で返す。
+        val storage = SharedStorageBridge(this)
+        sharedStorageBridge = storage
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SharedStorageBridge.CHANNEL)
+            .setMethodCallHandler(storage)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        sharedStorageBridge?.onActivityResult(requestCode, resultCode, data)
     }
 }

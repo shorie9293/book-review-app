@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:book_review_app/core/crash/crash_guard.dart';
 import 'package:book_review_app/core/crash/crash_log_repository.dart';
 import 'package:book_review_app/core/crash/crash_log_service.dart';
 import 'package:book_review_app/core/crash/error_boundary.dart';
 import 'package:book_review_app/core/infrastructure/app_lock_gate.dart';
+import 'package:book_review_app/core/infrastructure/shared_file_store.dart';
+import 'package:book_review_app/core/logging/app_logger.dart';
 import 'package:book_review_app/core/theme/app_theme.dart';
 import 'package:book_review_app/core/theme/theme_mode_repository.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
@@ -54,6 +58,27 @@ Future<void> bootstrap() async {
   installCrashGuard(logger: crashLogger);
 
   await Hive.initFlutter();
+
+  // ━━━ 共有ストレージ（現世をまたぐ受け渡し）の初期化 ━━━
+  // Android 実機では SAF（Storage Access Framework）でユーザーが選んだフォルダを使う。
+  // アプリは端末の共有一時領域を他アプリと共有できない（DAC で EACCES）ため、
+  // 直書きは廃止し SAF の共有フォルダに一本化した。
+  // フォルダ未選択でも起動は妨げない（連携画面から選んでもらう）。
+  try {
+    if (Platform.isAndroid) {
+      SharedFileStore.configure(AndroidSharedFileStore());
+    } else {
+      final dir = await getApplicationDocumentsDirectory();
+      SharedFileStore.configure(
+        FileSharedFileStore(Directory('${dir.path}/takamagahara_shared')),
+      );
+    }
+    final ready = await SharedFileStore.instance.ensureDirectory();
+    appLog.info(
+        '[main] 共有ストレージ: ${ready ? '準備OK' : '未設定（連携機能は停止中）'}');
+  } catch (e) {
+    appLog.warn('[main] 共有ストレージ初期化失敗（アプリは継続）', e);
+  }
 
   // 通知タップ → 該当画面遷移の配線。
   // Navigator 構築前のタップは NotificationTapRouter 側で保留され、

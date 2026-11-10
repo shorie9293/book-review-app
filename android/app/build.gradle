@@ -47,4 +47,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // SAF（Storage Access Framework）の DocumentFile。共有ストレージの読み書きに使う。
+    implementation("androidx.documentfile:documentfile:1.0.1")
 }
