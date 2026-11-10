@@ -7,6 +7,7 @@ import 'package:book_review_app/features/auto_backup/data/auto_backup_store.dart
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_policy.dart';
 import 'package:book_review_app/features/auto_backup/presentation/auto_backup_screen.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
+import 'package:book_review_app/features/backup/domain/backup_models.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
@@ -19,6 +20,12 @@ Future<String> _buildCurrentJson() async {
   final repository = await _openBackupRepository();
   final bundle = await repository.collect();
   return const BackupService().exportJson(bundle);
+}
+
+/// 自動バックアップ復元の内訳表示用: 現状のバンドルを採取する。
+Future<BackupBundle> _collectCurrentBundle() async {
+  final repository = await _openBackupRepository();
+  return repository.collect();
 }
 
 /// 回復導線用: 現状をバックアップファイルとして1回書き出す。
@@ -83,6 +90,7 @@ Widget buildAutoBackupScreen() {
     ),
     sharer: SharePlusAutoBackupSharer(),
     statusStore: FileAutoBackupStatusStore(),
+    existingBundleLoader: _collectCurrentBundle,
     onBackupNow: () async {
       final json = await _buildCurrentJson();
       await store.write(AutoBackupPolicy.fileNameFor(DateTime.now()), json);

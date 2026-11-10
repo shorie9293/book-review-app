@@ -28,6 +28,16 @@ class BackupKeys {
   /// 復元確認ダイアログの「復元する」ボタン
   static const Key confirmRestoreButton = Key('backup_confirm_restore_button');
 
+  /// 復元確認ダイアログの内訳（追加／スキップ件数）要約
+  static const Key restorePreviewSummary = Key('backup_restore_preview_summary');
+
+  /// 復元確認ダイアログの種別内訳（蔵書・レビュー・メモ）
+  static const Key restorePreviewBreakdown =
+      Key('backup_restore_preview_breakdown');
+
+  /// 復元確認ダイアログの追加対象サンプル
+  static const Key restorePreviewSamples = Key('backup_restore_preview_samples');
+
   /// JSON プレビュー表示
   static const Key jsonPreview = Key('backup_json_preview');
 

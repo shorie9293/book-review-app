@@ -5,6 +5,7 @@ import 'package:book_review_app/features/backup/data/backup_csv_sharer.dart';
 import 'package:book_review_app/features/backup/data/backup_repository.dart';
 import 'package:book_review_app/features/backup/domain/backup_models.dart';
 import 'package:book_review_app/features/backup/domain/backup_service.dart';
+import 'package:book_review_app/features/backup/domain/restore_preview.dart';
 import 'package:book_review_app/features/backup/presentation/backup_keys.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/features/bookshelf/data/book_deletion_service.dart';
@@ -184,6 +185,17 @@ class _BackupScreenState extends State<BackupScreen> {
     );
   }
 
+  /// 復元前プレビューを組み立てる。取得失敗時は null（従来表示のまま）。
+  Future<RestorePreview?> _buildRestorePreview(BackupBundle incoming) async {
+    try {
+      final existing = await widget.repository.collect();
+      return RestorePreview.tryBuild(incoming: incoming, existing: existing);
+    } catch (_) {
+      // 現状を採取できないときは内訳を出さない（復元導線は従来どおり通す）。
+      return null;
+    }
+  }
+
   /// 「復元」ボタン：JSONを検証して確認ダイアログへ進む。
   Future<void> _startRestore() async {
     setState(() {
@@ -199,15 +211,59 @@ class _BackupScreenState extends State<BackupScreen> {
       return;
     }
 
+    // 復元前プレビュー（取得に失敗しても従来表示のまま復元導線は止めない）
+    final preview = await _buildRestorePreview(parsed);
+
     if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('復元の確認'),
-        content: Text(
-          '蔵書 ${parsed.books.length}件 / レビュー ${parsed.reviews.length}件 / '
-          'メモ ${parsed.notes.length}件 を復元します。\n'
-          '既存のデータは上書きされません。よろしいですか？',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '蔵書 ${parsed.books.length}件 / レビュー ${parsed.reviews.length}件 / '
+                'メモ ${parsed.notes.length}件 を復元します。\n'
+                '既存のデータは上書きされません。よろしいですか？',
+              ),
+              if (preview != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        preview.summary,
+                        key: BackupKeys.restorePreviewSummary,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          preview.breakdown,
+                          key: BackupKeys.restorePreviewBreakdown,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(preview.message),
+                      ),
+                      if (preview.samplesText != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            preview.samplesText!,
+                            key: BackupKeys.restorePreviewSamples,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
         actions: [
           TextButton(

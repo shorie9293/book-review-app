@@ -586,7 +586,19 @@ class AppKeys {
   static const Key autoBackupRestoreIncludeSettings =
       Key('auto_backup_restore_include_settings');
 
-  /// 自動バックアップ: 最終成功時刻の表示
+  /// 自動バックアップ復元ダイアログの内訳（追加／スキップ件数）要約
+  static const Key autoBackupRestorePreviewSummary =
+      Key('auto_backup_restore_preview_summary');
+
+  /// 自動バックアップ復元ダイアログの種別内訳（蔵書・レビュー・メモ）
+  static const Key autoBackupRestorePreviewBreakdown =
+      Key('auto_backup_restore_preview_breakdown');
+
+  /// 自動バックアップ復元ダイアログの追加対象サンプル
+  static const Key autoBackupRestorePreviewSamples =
+      Key('auto_backup_restore_preview_samples');
+
+  /// 自動バックアップの最終成功日時
   static const Key autoBackupLastSuccess = Key('auto_backup_last_success');
 
   /// 自動バックアップ: 失敗の警告バナー

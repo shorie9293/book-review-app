@@ -9,6 +9,8 @@ import 'package:book_review_app/features/auto_backup/domain/auto_backup_presente
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_restorer.dart';
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_sharer.dart';
 import 'package:book_review_app/features/auto_backup/domain/auto_backup_status.dart';
+import 'package:book_review_app/features/backup/domain/backup_models.dart';
+import 'package:book_review_app/features/backup/domain/restore_preview.dart';
 
 /// 自動バックアップの閲覧・復元・共有画面。
 ///
@@ -36,6 +38,12 @@ class AutoBackupScreen extends StatefulWidget {
   /// 現在時刻（試練用）。
   final DateTime Function()? now;
 
+  /// 現状データの採取口（null なら復元確認の内訳を出さない）。
+  ///
+  /// 復元は「既存優先・追加のみ」なので、内訳は
+  /// 「追加される件数／重複してスキップされる件数」を出す。
+  final Future<BackupBundle?> Function()? existingBundleLoader;
+
   /// 画面を生成する。
   const AutoBackupScreen({
     super.key,
@@ -46,6 +54,7 @@ class AutoBackupScreen extends StatefulWidget {
     this.onBackupNow,
     this.statusStore,
     this.now,
+    this.existingBundleLoader,
   });
 
   @override
@@ -129,6 +138,21 @@ class _AutoBackupScreenState extends State<AutoBackupScreen> {
     await _reload();
   }
 
+  /// 復元前プレビューを組み立てる。失敗時は null（プレビュー非表示）。
+  Future<RestorePreview?> _buildPreview(String fileName) async {
+    final loader = widget.existingBundleLoader;
+    if (loader == null) return null;
+    try {
+      final existing = await loader();
+      return RestorePreview.tryBuildFromJson(
+        json: _contents[fileName],
+        existing: existing,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _onRestorePressed(AutoBackupRow row) async {
     final restorer = widget.restorer;
     if (restorer == null || !row.restorable) return;
@@ -138,37 +162,76 @@ class _AutoBackupScreenState extends State<AutoBackupScreen> {
         restorer is AutoBackupRestorerWithOptions ? restorer : null;
     var includeSettings = true;
 
+    // 復元前プレビュー（取得に失敗しても従来表示のまま復元導線は止めない）
+    final preview = await _buildPreview(row.entry.fileName);
+    if (!mounted) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('この世代を復元しますか？'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${row.displayLabel}\n現在のデータは復元前に自動で保存されます。',
-              ),
-              if (withOptions != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: SemanticHelper.interactive(
-                    testId: 'auto_backup_restore_include_settings',
-                    label: '設定も戻す（テーマ・文字サイズ）',
-                    child: CheckboxListTile(
-                      key: AppKeys.autoBackupRestoreIncludeSettings,
-                      value: includeSettings,
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      dense: true,
-                      title: const Text('設定も戻す（テーマ・文字サイズ）'),
-                      onChanged: (value) => setDialogState(
-                          () => includeSettings = value ?? false),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${row.displayLabel}\n現在のデータは復元前に自動で保存されます。',
+                ),
+                if (preview != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          preview.summary,
+                          key: AppKeys.autoBackupRestorePreviewSummary,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            preview.breakdown,
+                            key: AppKeys.autoBackupRestorePreviewBreakdown,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(preview.message),
+                        ),
+                        if (preview.samplesText != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              preview.samplesText!,
+                              key: AppKeys.autoBackupRestorePreviewSamples,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-            ],
+                if (withOptions != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: SemanticHelper.interactive(
+                      testId: 'auto_backup_restore_include_settings',
+                      label: '設定も戻す（テーマ・文字サイズ）',
+                      child: CheckboxListTile(
+                        key: AppKeys.autoBackupRestoreIncludeSettings,
+                        value: includeSettings,
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        dense: true,
+                        title: const Text('設定も戻す（テーマ・文字サイズ）'),
+                        onChanged: (value) => setDialogState(
+                            () => includeSettings = value ?? false),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
