@@ -5,8 +5,10 @@ import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/bookshelf/data/book_deletion_service.dart';
+import 'package:book_review_app/features/bookshelf/data/book_restore_service.dart';
 import 'package:book_review_app/features/bookshelf/data/book_search_service.dart';
 import 'package:book_review_app/features/bookshelf/domain/book_deletion.dart';
+import 'package:book_review_app/features/bookshelf/domain/book_restore.dart';
 import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
 import 'package:book_review_app/features/bookshelf/domain/library_query.dart';
 import 'package:book_review_app/features/bookshelf/domain/reading_status_service.dart';
@@ -50,6 +52,8 @@ import 'package:book_review_app/features/about/presentation/about_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
+import 'package:book_review_app/features/undo/domain/undo_buffer.dart';
+import 'package:book_review_app/features/undo/presentation/undo_snack_bar.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
 class BookshelfScreen extends StatefulWidget {
@@ -138,6 +142,10 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   Book? _foundBook;
   bool _isSearching = false;
   String? _errorMessage;
+
+  /// 直近の蔵書削除の復元材料（Undo は1回限り）
+  final UndoBuffer<BookRestoreSnapshot> _undoBuffer =
+      UndoBuffer<BookRestoreSnapshot>();
 
   @override
   void initState() {
@@ -603,8 +611,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => ReadingSessionScreen(
-                  repository:
-                      widget.readingSessionRepositoryOverride ??
+                  repository: widget.readingSessionRepositoryOverride ??
                           HiveReadingSessionRepository(),
                   now: DateTime.now,
                 ),
@@ -636,8 +643,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   }
 
   /// 検索・絞り込み・並び替えを適用した表示用リスト。
-  List<Book> get _visibleBooks =>
-      LibraryQueryService.apply(_books, _query);
+  List<Book> get _visibleBooks => LibraryQueryService.apply(_books, _query);
 
   /// 重複した蔵書の整理画面を開く。
   Future<void> _openDuplicateBooks() async {
@@ -731,7 +737,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Text('検索'),
                       ),
@@ -784,8 +791,7 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
                 style: TextStyle(color: Colors.red[700]),
               ),
             ),
-          if (_foundBook != null)
-            _buildFoundBookCard(_foundBook!),
+          if (_foundBook != null) _buildFoundBookCard(_foundBook!),
         ],
       ),
     );
@@ -827,10 +833,15 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(book.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(book.title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 4),
                   Text(book.author, style: TextStyle(color: Colors.grey[600])),
-                  if (book.publisher != null) Text(book.publisher!, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                  if (book.publisher != null)
+                    Text(book.publisher!,
+                        style:
+                            TextStyle(color: Colors.grey[500], fontSize: 12)),
                   const SizedBox(height: 8),
                   SemanticHelper.interactive(
                     testId: 'bookshelf_btn_add_found_book',
@@ -864,11 +875,11 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
         itemBuilder: (context, index) {
           final book = visibleBooks[index];
           return SemanticHelper.interactive(
-            testId: SemanticHelper.createTestId(
-                'bookshelf_book_tile', book.id),
+          testId: SemanticHelper.createTestId('bookshelf_book_tile', book.id),
             label: '書籍「${book.title}」を開く',
             child: ListTile(
-            leading: book.coverImageUrl != null && book.coverImageUrl!.isNotEmpty
+            leading:
+                book.coverImageUrl != null && book.coverImageUrl!.isNotEmpty
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: Image.network(
@@ -975,6 +986,20 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
 
     if (confirmed != true || !mounted) return;
 
+    // 削除**前**に、消える実体（本・レビュー・メモ）をそのまま退避する。
+    // 取得済みのリストを使うため追加の読み込みは発生しない。
+    // 退避に失敗した場合は Undo 導線を出さず、削除だけは続行する。
+    BookRestoreSnapshot? snapshot;
+    try {
+      snapshot = BookRestoreSnapshot.capture(
+        book: book,
+        reviews: reviews,
+        notes: notes,
+      );
+    } catch (_) {
+      snapshot = null;
+    }
+
     final service = BookDeletionService(
       deleteReviews: reviewRepository == null
           ? null
@@ -994,6 +1019,54 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
       reviewIds: [for (final review in reviews) review.id],
     );
     await _loadBooks();
+
+    if (snapshot == null) return;
+    _undoBuffer.push(snapshot);
+    if (!mounted) return;
+    showUndoSnackBar(
+      context,
+      message: '「${book.title}」を削除しました',
+      onUndo: _undoBookDeletion,
+    );
+  }
+
+  /// 直近の蔵書削除を逆順（book → notes → reviews）に復元する。
+  ///
+  /// 復元は専用 zone に隔離し、呼出元（Flutter のエラー報告経路）を汚さない。
+  /// 結果は非ブロッキングの SnackBar で1回だけ通知する（UI は止めない）。
+  Future<void> _undoBookDeletion() async {
+    final snapshot = _undoBuffer.take();
+    if (snapshot == null) return;
+
+    final report = await BookRestoreService(
+      addBook: widget.repository.addBook,
+      addNote: widget.noteRepository?.addNote,
+      addReview: widget.reviewRepository?.addReview,
+    ).restoreInIsolatedZone(snapshot);
+
+    if (!mounted) return;
+    await _loadBooks();
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(_restoreResultMessage(report)),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  /// 復元結果の通知文言（何件戻した／失敗ステップ）
+  String _restoreResultMessage(BookRestoreReport report) {
+    final counts = '本${report.bookRestored ? 1 : 0}冊・'
+        '書評${report.restoredReviews}件・メモ${report.restoredNotes}件';
+    if (!report.hasFailures) {
+      return '元に戻しました（$counts）';
+    }
+    return '一部を元に戻せませんでした（$counts を復元／'
+        '失敗: ${report.failures.join(", ")}）';
   }
 
   void _navigateToReviews(Book book) {
@@ -1024,7 +1097,8 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
         // 画面上の一覧は更新前の状態なので、この本だけ更新後へ差し替えて渡す
         // （そのまま渡すと読了冊数が今回の読了を数え落とす）。
         final allBooks = <Book>[
-          for (final b in _books) if (b.id == updated.id) updated else b,
+          for (final b in _books)
+            if (b.id == updated.id) updated else b,
         ];
         await coordinator.exportCompletion(
           previous: book,
