@@ -23,6 +23,7 @@ import 'package:book_review_app/features/reminder/infrastructure/hive_quiet_hour
 import 'package:book_review_app/features/reminder/presentation/quiet_hours_settings_screen.dart';
 import 'package:book_review_app/features/reminder/infrastructure/notification_permission_requester.dart';
 import 'package:book_review_app/features/reminder/presentation/reading_reminder_settings_screen.dart';
+import 'package:book_review_app/features/settings/presentation/cross_app_link_status_screen.dart';
 import 'package:book_review_app/screens/reduce_motion_settings_screen.dart';
 import 'package:book_review_app/screens/text_scale_settings_screen.dart';
 import 'package:book_review_app/screens/theme_mode_settings_screen.dart';
@@ -77,6 +78,9 @@ class SettingsHubScreen extends StatelessWidget {
   /// 「不具合の報告」画面ビルダー（未指定なら実画面）
   final WidgetBuilder? crashLogBuilder;
 
+  /// 「連携状況」画面ビルダー（未指定なら実画面）
+  final WidgetBuilder? crossAppLinkStatusScreenBuilder;
+
   /// 静穏時間の保存先（未指定なら実装既定＝Hive）
   final QuietHoursRepository? quietHoursRepository;
 
@@ -104,6 +108,7 @@ class SettingsHubScreen extends StatelessWidget {
     this.backupRepository,
     this.crashLogRepository,
     this.crashLogBuilder,
+    this.crossAppLinkStatusScreenBuilder,
     this.quietHoursRepository,
     this.autoBackupStatusStore,
   });
@@ -308,6 +313,15 @@ class SettingsHubScreen extends StatelessWidget {
             title: '遊び方・ヘルプ',
             subtitle: 'チュートリアルをもう一度読む',
             builder: (_) => const HelpScreen(),
+          ),
+          _item(
+            context,
+            id: 'cross_app_link',
+            icon: Icons.swap_horiz,
+            title: '連携状況（現世間の受け渡し）',
+            subtitle: '共有フォルダへの最終送信／最終受信を確認する',
+            builder: crossAppLinkStatusScreenBuilder ??
+                (_) => const CrossAppLinkStatusScreen(),
           ),
         ],
       ),
