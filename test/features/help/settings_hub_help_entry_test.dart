@@ -82,6 +82,7 @@ void main() {
       // 既存10件は元の相対順のまま存在する。
       final existing = keys
           .where((k) => k != 'settings_hub_item_help')
+          .where((k) => k != 'settings_hub_item_cross_app_link')
           .map((k) => k.replaceFirst('settings_hub_item_', ''))
           .toList();
       expect(existing, _preExistingIds);
@@ -89,6 +90,12 @@ void main() {
       // ヘルプは1本だけ。
       expect(
         keys.where((k) => k == 'settings_hub_item_help').length,
+        1,
+      );
+
+      // 連携状況も1本だけ（項目追加はこの1本に限る）。
+      expect(
+        keys.where((k) => k == 'settings_hub_item_cross_app_link').length,
         1,
       );
     });
