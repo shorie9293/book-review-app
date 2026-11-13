@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:hive/hive.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
@@ -29,8 +30,10 @@ class HiveChallengeRepository implements ChallengeRepository {
       bookId: map['bookId'] as String,
       rating: map['rating'] as int,
       text: map['text'] as String,
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      createdAt:
+          normalizeToLocal(DateTime.parse(map['createdAt'] as String)),
+      updatedAt:
+          normalizeToLocal(DateTime.parse(map['updatedAt'] as String)),
     );
   }
 

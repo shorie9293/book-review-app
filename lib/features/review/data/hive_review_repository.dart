@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:hive/hive.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
@@ -42,8 +43,12 @@ class HiveReviewRepository implements ReviewRepository {
       bookId: map['bookId'] as String,
       rating: map['rating'] as int,
       text: map['text'] as String,
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      // 保存形式は瞬間（UTC ISO 可）。復元境界でローカル瞬間へ正規化し、
+      // 下流の暦読み（.year 直読み）へ UTC 種別を流さない。
+      createdAt:
+          normalizeToLocal(DateTime.parse(map['createdAt'] as String)),
+      updatedAt:
+          normalizeToLocal(DateTime.parse(map['updatedAt'] as String)),
     );
   }
 

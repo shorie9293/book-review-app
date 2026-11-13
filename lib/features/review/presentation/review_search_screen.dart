@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/repositories/repositories.dart';
 import 'package:book_review_app/features/review/domain/review_query.dart';
@@ -90,8 +91,10 @@ class _ReviewSearchScreenState extends State<ReviewSearchScreen> {
     }
   }
 
-  String _formatDate(DateTime date) =>
-      '${date.year}/${date.month}/${date.day}';
+  /// 保存された瞬間を **ローカル暦** の `yyyy/M/d` で表示する。
+  /// UTC 種別の [DateTime] を直読みすると UTC 暦になり、JST 早朝の
+  /// レビューが前日表示になるため正準関数へ委譲する。
+  String _formatDate(DateTime date) => formatLocalDate(date);
 
   void _openReview(String bookId) {
     final builder = widget.reviewScreenBuilder;

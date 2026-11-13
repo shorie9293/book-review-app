@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/features/bookshelf/domain/genre_service.dart';
@@ -85,7 +86,7 @@ class ReadingTrendService {
     DateTime? now,
   }) {
     final ref = now ?? DateTime.now();
-    final year = ref.year;
+    final year = localYear(ref);
 
     // 月別読了冊数は既存サービスの結果をそのまま使う（規則の一元化）。
     final monthlyFinished =
@@ -96,8 +97,8 @@ class ReadingTrendService {
     final monthlyMinutes = List<int>.filled(12, 0);
     for (final session in sessions) {
       final started = session.startedAt;
-      if (started.year != year || started.isAfter(ref)) continue;
-      monthlyMinutes[started.month - 1] += session.durationMinutes;
+      if (localYear(started) != year || started.isAfter(ref)) continue;
+      monthlyMinutes[localMonth(started) - 1] += session.durationMinutes;
     }
 
     // ジャンル分布: 対象年内に読了した書籍が対象。
@@ -105,7 +106,7 @@ class ReadingTrendService {
     // 無ければ今年の最初のレビュー作成日）。
     final firstReviewByBook = <String, DateTime>{};
     for (final review in reviews) {
-      if (review.createdAt.year != year) continue;
+      if (localYear(review.createdAt) != year) continue;
       final existing = firstReviewByBook[review.bookId];
       if (existing == null || review.createdAt.isBefore(existing)) {
         firstReviewByBook[review.bookId] = review.createdAt;
@@ -116,7 +117,7 @@ class ReadingTrendService {
     for (final book in books) {
       if (book.readingStatus.name != 'finished') continue;
       final finishedAt = book.finishedAt ?? firstReviewByBook[book.id];
-      if (finishedAt == null || finishedAt.year != year) continue;
+      if (finishedAt == null || localYear(finishedAt) != year) continue;
       if (finishedAt.isAfter(ref)) continue;
 
       final genres = GenreService.canonicalList(book.genres);

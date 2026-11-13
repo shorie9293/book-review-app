@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 
 /// 読書メモ・引用のカードウィジェット。
@@ -76,7 +77,7 @@ class NoteCard extends StatelessWidget {
             ],
             const SizedBox(height: 4),
             Text(
-              '${note.createdAt.year}/${note.createdAt.month}/${note.createdAt.day}',
+              formatLocalDate(note.createdAt),
               key: const Key('note_card_date'),
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),

@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/features/import/domain/bulk_import_service.dart';
 
 /// 一括インポート1回分の履歴。
@@ -93,7 +94,8 @@ class ImportHistoryEntry {
 
     final DateTime importedAt;
     try {
-      importedAt = DateTime.parse(rawDate);
+      // 保存形式は瞬間（UTC ISO 可）。復元境界でローカル種別へ正規化する。
+      importedAt = normalizeToLocal(DateTime.parse(rawDate));
     } catch (e) {
       throw FormatException('importedAt が日時として解釈できない: $rawDate');
     }

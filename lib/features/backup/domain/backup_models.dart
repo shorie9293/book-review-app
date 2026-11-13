@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
@@ -221,7 +222,8 @@ DateTime? _parseOptionalDate(Object? raw, String field) {
   if (parsed == null) {
     throw FormatException('$field is invalid');
   }
-  return parsed;
+  // 任意日時も同じ契約: 瞬間をローカル種別へ正規化して返す。
+  return normalizeToLocal(parsed);
 }
 
 DateTime _parseRequiredDate(Object? raw, String field) {
@@ -229,7 +231,8 @@ DateTime _parseRequiredDate(Object? raw, String field) {
   if (parsed == null) {
     throw FormatException('$field is invalid');
   }
-  return parsed;
+  // 例外仕様は不変。返す瞬間だけローカル種別へ正規化する。
+  return normalizeToLocal(parsed);
 }
 
 /// バックアップ対象件数の要約（画面表示用）。

@@ -1,5 +1,6 @@
 import 'package:book_review_app/core/haptics.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/models/review.dart';
@@ -384,12 +385,16 @@ class _DuplicateBooksScreenState extends State<DuplicateBooksScreen> {
     );
   }
 
-  /// 追加日時の表示（yyyy/MM/dd）。未設定は「未設定」。
+  /// 追加日時の表示（yyyy/MM/dd・ゼロ埋めあり）。未設定は「未設定」。
+  ///
+  /// 保存された瞬間は UTC 種別でありうるため、`.year` を直読みせず
+  /// [normalizeToLocal] でローカル暦へ正規化してから整形する。
   String _formatDate(DateTime? value) {
     if (value == null) return '未設定';
-    final year = value.year.toString().padLeft(4, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    final day = value.day.toString().padLeft(2, '0');
+    final local = normalizeToLocal(value);
+    final year = local.year.toString().padLeft(4, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
     return '$year/$month/$day';
   }
 }

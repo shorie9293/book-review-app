@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/features/share/domain/share_card_data.dart';
 import 'package:book_review_app/features/share/domain/share_card_service.dart';
 import 'package:book_review_app/features/share/presentation/share_card_capture.dart';
@@ -154,7 +155,9 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
 
   Widget _buildPreviewCard(ShareCardData data) {
     final fav = data.favoriteReview;
-    final generated = data.generatedAt;
+    // generatedAt は注入された `now()` 由来で UTC 種別も入り得るため、
+    // 直読みせずローカル暦へ正規化する（JST 早朝の生成が前日表示になる）。
+    final generated = normalizeToLocal(data.generatedAt);
     final month = generated.month.toString().padLeft(2, '0');
     final day = generated.day.toString().padLeft(2, '0');
     return RepaintBoundary(

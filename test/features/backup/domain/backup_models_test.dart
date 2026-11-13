@@ -98,7 +98,12 @@ void main() {
       expect(restored.books.single.genres, ['小説']);
       expect(restored.books.single.readingStatus.name, 'reading');
       expect(restored.books.single.currentPage, 12);
-      expect(restored.books.single.addedAt, book.addedAt);
+      // 復元境界では保存形式（瞬間）をローカル種別へ正規化するため、
+      // 期待値も同じ正規化を経て算出する（旧: book.addedAt の種別を固定）。
+      expect(
+        restored.books.single.addedAt,
+        DateTime.parse(book.addedAt!.toIso8601String()).toLocal(),
+      );
       expect(restored.reviews.single.id, 'r1');
       expect(restored.reviews.single.rating, 4);
       expect(restored.notes.single.id, 'n1');

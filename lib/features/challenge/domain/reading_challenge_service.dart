@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/review.dart';
 
 /// 年間読書チャレンジの純粋ロジック。
@@ -14,9 +15,10 @@ class ReadingChallengeService {
   /// 同一書籍の複数レビューは 1 冊として数える（distinct bookId）。
   static int booksReadInYear(List<Review> reviews, {DateTime? now}) {
     final ref = now ?? DateTime.now();
+    final refYear = localYear(ref);
     final bookIds = <String>{};
     for (final review in reviews) {
-      if (review.createdAt.year == ref.year) {
+      if (localYear(review.createdAt) == refYear) {
         bookIds.add(review.bookId);
       }
     }

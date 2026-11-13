@@ -1,3 +1,5 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
+
 /// 読書メモ・引用の種別
 ///
 /// [memo] は読書中の気づき、[quote] は本文からの引用を表す。
@@ -155,11 +157,15 @@ class BookNote {
       }
     }
 
-    final createdAt = DateTime.tryParse('${map['createdAt']}');
-    if (createdAt == null) {
+    final rawCreatedAt = DateTime.tryParse('${map['createdAt']}');
+    if (rawCreatedAt == null) {
       throw const FormatException('BookNote.createdAt is invalid');
     }
-    final updatedAt = DateTime.tryParse('${map['updatedAt']}') ?? createdAt;
+    // 保存形式は瞬間（UTC ISO 可）。復元境界でローカル瞬間へ正規化する。
+    final createdAt = normalizeToLocal(rawCreatedAt);
+    final rawUpdatedAt = DateTime.tryParse('${map['updatedAt']}');
+    final updatedAt =
+        rawUpdatedAt == null ? createdAt : normalizeToLocal(rawUpdatedAt);
 
     return BookNote(
       id: id,

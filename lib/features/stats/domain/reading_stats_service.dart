@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 
@@ -65,7 +66,8 @@ class ReadingStatsService {
     DateTime? now,
   }) {
     final ref = now ?? DateTime.now();
-    final year = ref.year;
+    // 年は「ローカル暦の年」で判定する（UTC 種別の瞬間を直読みしない）。
+    final year = localYear(ref);
 
     // 読了日の解決: finishedAt を優先し、無ければ今年の最初のレビュー日。
     final finishedThisYear = <DateTime>[];
@@ -75,7 +77,7 @@ class ReadingStatsService {
     // 書籍ID -> 今年の最初のレビュー作成日（レビューは後で照合するため収集）
     final firstReviewByBook = <String, DateTime>{};
     for (final review in reviews) {
-      if (review.createdAt.year != year) continue;
+      if (localYear(review.createdAt) != year) continue;
       final existing = firstReviewByBook[review.bookId];
       if (existing == null || review.createdAt.isBefore(existing)) {
         firstReviewByBook[review.bookId] = review.createdAt;
@@ -85,7 +87,7 @@ class ReadingStatsService {
     // 今年のレビューの平均評価
     double? averageRating;
     final yearReviews =
-        reviews.where((r) => r.createdAt.year == year).toList();
+        reviews.where((r) => localYear(r.createdAt) == year).toList();
     if (yearReviews.isNotEmpty) {
       var total = 0;
       for (final review in yearReviews) {
@@ -98,7 +100,7 @@ class ReadingStatsService {
       if (book.readingStatus.name != 'finished') continue;
 
       final finishedAt = book.finishedAt ?? firstReviewByBook[book.id];
-      if (finishedAt == null || finishedAt.year != year) continue;
+      if (finishedAt == null || localYear(finishedAt) != year) continue;
       if (finishedAt.isAfter(ref)) continue;
 
       finishedThisYear.add(finishedAt);
@@ -109,7 +111,7 @@ class ReadingStatsService {
 
     final monthlyCounts = List.filled(12, 0);
     for (final date in finishedThisYear) {
-      monthlyCounts[date.month - 1]++;
+      monthlyCounts[localMonth(date) - 1]++;
     }
 
     final authorEntries = authorsThisYear.entries.toList()
@@ -120,7 +122,7 @@ class ReadingStatsService {
       });
 
     // 経過月数: 1月〜now の月。平均は切り上げ（端数月も1ヶ月と数える）。
-    final elapsedMonths = ref.month;
+    final elapsedMonths = localMonth(ref);
     final pace = finishedThisYear.isEmpty
         ? 0.0
         : finishedThisYear.length / elapsedMonths;
@@ -150,7 +152,7 @@ class ReadingStatsService {
     final previous = compute(
       books: books,
       reviews: reviews,
-      now: DateTime(ref.year - 1, 12, 31, 23, 59, 59),
+      now: DateTime(localYear(ref) - 1, 12, 31, 23, 59, 59),
     );
     return YearComparison(current: current, previous: previous);
   }

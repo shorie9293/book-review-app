@@ -115,9 +115,16 @@ void main() {
         sampleIsbns: const ['9784774189079', '9784123456784'],
       );
       final restored = ImportHistoryEntry.fromJson(original.toJson());
-      expect(restored, original);
-      expect(restored.hashCode, original.hashCode);
-      expect(restored.importedAt, original.importedAt);
+      // 復元境界では保存形式（瞬間）をローカル種別へ正規化する契約のため、
+      // 値等価の基準は「正規化後の期待値」に置く（瞬間そのものは不変）。
+      final expected = entry(
+        importedAt: original.importedAt.toLocal(),
+        sampleIsbns: const ['9784774189079', '9784123456784'],
+      );
+      expect(restored, expected);
+      expect(restored.hashCode, expected.hashCode);
+      expect(restored.importedAt.isAtSameMomentAs(original.importedAt), isTrue);
+      expect(restored.importedAt.isUtc, isFalse);
       expect(restored.sampleIsbns, original.sampleIsbns);
     });
 

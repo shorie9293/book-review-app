@@ -1,3 +1,4 @@
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
@@ -75,9 +76,12 @@ class ShareCardService {
     if (fav != null) {
       lines.add('⭐${fav.rating} 「${fav.excerpt}」〈${fav.bookTitle}〉');
     }
-    final y = data.generatedAt.year.toString();
-    final m = data.generatedAt.month.toString().padLeft(2, '0');
-    final d = data.generatedAt.day.toString().padLeft(2, '0');
+    // `now` は注入可能（呼び出し側が DateTime.utc を渡し得る）ため、
+    // 暦はローカル暦へ正規化してから整形する。
+    final generated = normalizeToLocal(data.generatedAt);
+    final y = generated.year.toString();
+    final m = generated.month.toString().padLeft(2, '0');
+    final d = generated.day.toString().padLeft(2, '0');
     lines.add('$y/$m/$d');
     return lines.join('\n');
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/time/local_calendar_date.dart';
 import 'package:book_review_app/domain/models/review.dart';
 
 /// レビューカードウィジェット
@@ -45,7 +46,7 @@ class ReviewCard extends StatelessWidget {
             const SizedBox(height: 4),
             // 日付
             Text(
-              '${review.createdAt.year}/${review.createdAt.month}/${review.createdAt.day}',
+              formatLocalDate(review.createdAt),
               key: const Key('review_card_date'),
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
