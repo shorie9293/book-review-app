@@ -200,6 +200,10 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
       _startedAt = null;
       _elapsedSeconds = 0;
     });
+    // 下書きは「計測中」の印ゆえ、停止したら捨てる。
+    // 残すと再入場で停止済みのセッションが計測再開扱いになり、
+    // 離席していた時間まで読書時間として数えてしまう。
+    _clearDraft();
   }
 
   /// 確定した経過分をセッションとして保存する。
