@@ -1,8 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/logging/app_logger.dart';
+import 'package:book_review_app/features/reading/data/reading_session_draft_store.dart';
 import 'package:book_review_app/features/reading/data/reading_session_repository.dart';
 import 'package:book_review_app/features/reading/domain/reading_session.dart';
+import 'package:book_review_app/features/reading/domain/reading_session_draft.dart';
 import 'package:book_review_app/features/reading/domain/reading_session_service.dart';
 import 'package:book_review_app/features/reading/domain/reading_stats.dart';
 import 'package:book_review_app/features/reading/presentation/widgets/reading_habit_heatmap.dart';
@@ -26,12 +29,16 @@ class ReadingSessionScreen extends StatefulWidget {
   /// 集計・生成に使う純粋サービス。
   final ReadingSessionService service;
 
+  /// 走行中セッションの下書き保存先（未指定なら SharedPreferences 実装）。
+  final ReadingSessionDraftStore? draftStore;
+
   const ReadingSessionScreen({
     super.key,
     required this.repository,
     DateTime Function()? now,
     this.service = const ReadingSessionService(),
-  })  : now = now ?? DateTime.now;
+    this.draftStore,
+  }) : now = now ?? DateTime.now;
 
   @override
   State<ReadingSessionScreen> createState() => _ReadingSessionScreenState();
@@ -54,19 +61,97 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
   Timer? _tickTimer;
   int _elapsedSeconds = 0;
 
+  /// 下書きの保存先（生成時に1度だけ決める）。
+  late final ReadingSessionDraftStore _draftStore;
+
   /// 直近に削除した読書セッション（「元に戻す」用・単一スロット）。
   final UndoBuffer<ReadingSession> _undoBuffer = UndoBuffer<ReadingSession>();
 
   @override
   void initState() {
     super.initState();
+    _draftStore =
+        widget.draftStore ?? SharedPreferencesReadingSessionDraftStore();
     _reload();
+    _restoreDraft();
   }
 
   @override
   void dispose() {
+    // 走行中なら下書きを残してから止める（再入場で経過を継続するため）。
+    // dispose では setState を呼ばない。書き込みは待たない（破棄を遅らせない）。
+    _persistDraft();
     _tickTimer?.cancel();
     super.dispose();
+  }
+
+  /// 下書きに開始時刻を書く。失敗は警告のみで本編を止めない。
+  void _persistDraft() {
+    final startedAt = _startedAt;
+    if (startedAt == null) return;
+    final draft = ReadingSessionDraft(startedAt: startedAt);
+    unawaited(
+      _draftStore
+          .write(draft)
+          .catchError((Object error, StackTrace stackTrace) {
+        appLog.warn('読書セッション下書きの保存に失敗しました', error, stackTrace);
+      }),
+    );
+  }
+
+  /// 下書きを消す（保存成功後にのみ呼ぶ）。失敗は警告のみ。
+  void _clearDraft() {
+    unawaited(
+      _draftStore.clear().catchError((Object error, StackTrace stackTrace) {
+        appLog.warn('読書セッション下書きの削除に失敗しました', error, stackTrace);
+      }),
+    );
+  }
+
+  /// 起動時に走行中セッションが残っていれば復帰する。
+  ///
+  /// 壊れた下書き・未来時刻・長時間放置でも落ちない（クランプして再開する）。
+  Future<void> _restoreDraft() async {
+    ReadingSessionDraft? draft;
+    try {
+      draft = await _draftStore.read();
+    } catch (error, stackTrace) {
+      appLog.warn('読書セッション下書きの読み込みに失敗しました', error, stackTrace);
+      return;
+    }
+    if (!mounted || draft == null) return;
+    // 復帰直後から計測を継続する。
+    setState(() {
+      _startedAt = draft!.startedAt;
+      _pendingMinutes = null;
+      _elapsedSeconds =
+          widget.now().difference(draft.startedAt).inSeconds.clamp(0, 1 << 31);
+    });
+    _startTicking();
+    _showRestoredMessage();
+  }
+
+  /// 復帰を利用者に伝える導線（SnackBar）。
+  void _showRestoredMessage() {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(
+      const SnackBar(
+        key: Key('reading_draft_restored'),
+        content: Text('走行中セッションを復帰しました'),
+      ),
+    );
+  }
+
+  /// 1秒ごとに経過表示を更新するタイマーを（再）開始する。
+  void _startTicking() {
+    _tickTimer?.cancel();
+    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _elapsedSeconds =
+            widget.now().difference(_startedAt!).inSeconds.clamp(0, 1 << 31);
+      });
+    });
   }
 
   /// 読み込み。失敗しても既存の [_sessions] は消さず、失敗状態だけを立てる。
@@ -97,14 +182,9 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
       _pendingMinutes = null;
       _elapsedSeconds = 0;
     });
-    _tickTimer?.cancel();
-    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        _elapsedSeconds =
-            widget.now().difference(_startedAt!).inSeconds.clamp(0, 1 << 31);
-      });
-    });
+    // 離脱・破棄に備えて開始時刻を退避する。
+    _persistDraft();
+    _startTicking();
   }
 
   /// 停止：経過分（最低1分）を確定し、保存待ちにする。
@@ -133,6 +213,8 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
       endedAt: startedAt.add(Duration(minutes: pending)),
     );
     await widget.repository.add(session);
+    // 保存が通ってから下書きを捨てる（消える前に確実に残す）。
+    _clearDraft();
     if (!mounted) return;
     setState(() {
       _pendingMinutes = null;
@@ -174,7 +256,8 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     errorMessage!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
             ],
@@ -332,7 +415,9 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
                 key: running || pending != null
                     ? AppKeys.readingStop
                     : AppKeys.readingStart,
-                onPressed: pending != null ? _savePending : (running ? _stopTimer : _startTimer),
+                onPressed: pending != null
+                    ? _savePending
+                    : (running ? _stopTimer : _startTimer),
                 child: Text(pending != null ? '保存' : (running ? '停止' : '開始')),
               ),
             ),
@@ -404,15 +489,13 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
                     ),
                     Expanded(
                       child: LinearProgressIndicator(
-                        value:
-                            maxMinutes == 0 ? 0 : day.minutes / maxMinutes,
+                        value: maxMinutes == 0 ? 0 : day.minutes / maxMinutes,
                         minHeight: 10,
                       ),
                     ),
                     SizedBox(
                       width: 56,
-                      child: Text('${day.minutes}分',
-                          textAlign: TextAlign.end),
+                      child: Text('${day.minutes}分', textAlign: TextAlign.end),
                     ),
                   ],
                 ),
