@@ -50,6 +50,7 @@ import 'package:book_review_app/core/haptics.dart';
 import 'package:book_review_app/core/infrastructure/app_lock_settings_screen.dart';
 import 'package:book_review_app/features/about/presentation/about_screen.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/core/theme/theme_mode_setting.dart';
 import 'package:book_review_app/core/theme/reduce_motion_setting.dart';
 import 'package:book_review_app/features/undo/domain/undo_buffer.dart';
@@ -864,7 +865,17 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
   Widget _buildBookList() {
     final visibleBooks = _visibleBooks;
     if (_books.isEmpty) {
-      return const Center(child: Text('📚 蔵書がありません'));
+      // 空状態の共通部品。既存文言（📚 蔵書がありません）は一字も変えない。
+      return EmptyStateView(
+        key: const Key('bookshelf_empty_state'),
+        icon: Icons.menu_book_outlined,
+        spec: EmptyStateSpec(
+          title: '📚 蔵書がありません',
+          description: 'バーコードを読み取るか、ISBNで検索して本を追加しましょう。',
+          actionLabel: '本を追加',
+          onAction: () => _openBarcodeScanner(),
+        ),
+      );
     }
     if (visibleBooks.isEmpty) {
       return const Center(child: Text('🔍 該当する本がありません'));

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:book_review_app/core/input/draft_store.dart';
 import 'package:book_review_app/core/input/guarded_dialog.dart';
 import 'package:book_review_app/core/input/unsaved_changes.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
 import 'package:book_review_app/features/notes/presentation/viewmodel/book_notes_view_model.dart';
@@ -337,9 +338,16 @@ class _BookNotesScreenState extends State<BookNotesScreen> {
 
   Widget _buildList(List<BookNote> notes) {
     if (notes.isEmpty) {
-      return const Center(
-        key: Key('note_empty_state'),
-        child: Text('メモはまだありません'),
+      // 空状態の共通部品。既存文言・既存 Key（note_empty_state）は変えない。
+      return EmptyStateView(
+        key: const Key('note_empty_state'),
+        icon: Icons.edit_note_outlined,
+        spec: EmptyStateSpec(
+          title: 'メモはまだありません',
+          description: '読んだページや心に残った引用を書き留めましょう。',
+          actionLabel: 'メモを書く',
+          onAction: _showAddDialog,
+        ),
       );
     }
 
