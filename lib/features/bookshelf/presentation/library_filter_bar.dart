@@ -174,36 +174,35 @@ class _LibraryFilterBarState extends State<LibraryFilterBar> {
             onSelected: _applyHistory,
           ),
           const SizedBox(height: 4),
-          Row(
+          // 狭幅＋文字拡大でも溢れないよう Row ではなく Wrap で折り返す
+          // （Spacer は Wrap に置けず、溢れると右端のリセットに到達できない）。
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               for (final status in ReadingStatus.values)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    key: Key('library_status_chip_${status.name}'),
-                    label: Text(status.label),
-                    selected: query.statuses.contains(status),
-                    onSelected: (selected) {
-                      final next = Set<ReadingStatus>.from(query.statuses);
-                      selected ? next.add(status) : next.remove(status);
-                      widget.onChanged(query.copyWith(statuses: next));
-                    },
-                  ),
+                FilterChip(
+                  key: Key('library_status_chip_${status.name}'),
+                  label: Text(status.label),
+                  selected: query.statuses.contains(status),
+                  onSelected: (selected) {
+                    final next = Set<ReadingStatus>.from(query.statuses);
+                    selected ? next.add(status) : next.remove(status);
+                    widget.onChanged(query.copyWith(statuses: next));
+                  },
                 ),
-              const Spacer(),
               Text(
                 '${widget.filteredCount} / ${widget.totalCount} 冊',
                 key: const Key('library_count_text'),
               ),
-              if (hasFilters) ...[
-                const SizedBox(width: 8),
+              if (hasFilters)
                 TextButton.icon(
                   key: const Key('library_reset_button'),
                   onPressed: () => widget.onChanged(const LibraryQuery()),
                   icon: const Icon(Icons.clear, size: 16),
                   label: const Text('リセット'),
                 ),
-              ],
             ],
           ),
           if (widget.genres.isNotEmpty) ...[

@@ -533,6 +533,9 @@ class AppKeys {
   /// 本棚: 重複蔵書のバナー
   static const Key duplicateBanner = Key('bookshelf_duplicate_banner');
 
+  /// 本棚: AppBar に畳んだ操作を開く「その他」メニュー（狭幅のみ表示）
+  static const Key bookshelfMoreActions = Key('bookshelf_more_actions');
+
   /// 本棚: 重複整理画面への導線
   static const Key duplicateOpenButton = Key('bookshelf_duplicate_open');
 

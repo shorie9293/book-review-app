@@ -21,6 +21,7 @@ import 'package:book_review_app/features/crossapp/data/cross_app_link_repository
 import 'package:book_review_app/features/crossapp/data/reward_export_log_repository.dart';
 import 'package:book_review_app/features/bookshelf/presentation/barcode_scanner_screen.dart';
 import 'package:book_review_app/features/bookshelf/presentation/book_detail_screen.dart';
+import 'package:book_review_app/features/bookshelf/domain/app_bar_action_plan.dart';
 import 'package:book_review_app/features/bookshelf/presentation/library_filter_bar.dart';
 import 'package:book_review_app/features/bookshelf/presentation/stagnant_books_screen.dart';
 import 'package:book_review_app/features/duplicates/domain/duplicate_book_service.dart';
@@ -402,224 +403,316 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
     );
   }
 
+  /// AppBar の導線を「直置き」と「その他メニュー」へ振り分けて描画する。
+  ///
+  /// 実機幅360dpでは17件のアイコンが `RenderFlex overflowed` を起こし、
+  /// 右端の操作に到達できなかった。幅と文字倍率から直置きできる件数を決め、
+  /// 収まらない分は「その他」メニューへ畳む（広い画面では従来通り全件直置き）。
+  /// 各導線の Key・意味・遷移先は畳んでも不変。
+  List<Widget> _buildAppBarActionWidgets(BuildContext context) {
+    final actions = _shelfActions();
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 3.0);
+    final plan = AppBarActionPlan.plan(
+      actionCount: actions.length,
+      availableWidth: MediaQuery.sizeOf(context).width,
+      titleReserve: kAppBarTitleReserveBase * textScale,
+    );
+    // 優先度の高い導線を直置きし、残りは宣言順で「その他」へ。
+    final ordered = List<_ShelfAction>.of(actions)
+      ..sort((a, b) {
+        final byPriority = a.priority.compareTo(b.priority);
+        return byPriority != 0 ? byPriority : a.index.compareTo(b.index);
+      });
+    final inline = ordered.take(plan.inlineCount).toList(growable: false);
+    final inlineKeys = inline.map((action) => action.key).toSet();
+    final overflow = actions
+        .where((action) => !inlineKeys.contains(action.key))
+        .toList(growable: false);
+
+    return [
+      for (final action in inline) _inlineAppBarAction(action),
+      if (overflow.isNotEmpty) _moreAppBarActions(overflow),
+    ];
+  }
+
+  Widget _inlineAppBarAction(_ShelfAction action) {
+    final button = IconButton(
+      key: action.key,
+      icon: Icon(action.icon),
+      tooltip: action.tooltip,
+      onPressed: action.onPressed,
+    );
+    final testId = action.semanticTestId;
+    if (testId == null) return button;
+    return SemanticHelper.interactive(
+      testId: testId,
+      label: action.semanticLabel ?? action.tooltip,
+      child: button,
+    );
+  }
+
+  Widget _moreAppBarActions(List<_ShelfAction> overflow) {
+    return SemanticHelper.interactive(
+      testId: 'bookshelf_btn_more_actions',
+      label: 'その他の操作を開く',
+      child: PopupMenuButton<Key>(
+        key: AppKeys.bookshelfMoreActions,
+        icon: const Icon(Icons.more_vert),
+        tooltip: 'その他',
+        onSelected: (key) {
+          for (final action in overflow) {
+            if (action.key == key) {
+              action.onPressed();
+              return;
+            }
+          }
+        },
+        itemBuilder: (context) => [
+          for (final action in overflow)
+            PopupMenuItem<Key>(
+              key: action.key,
+              value: action.key,
+              child: Row(
+                children: [
+                  Icon(action.icon, size: 20),
+                  const SizedBox(width: 12),
+                  Flexible(child: Text(action.tooltip)),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// AppBar に並べる導線の定義（宣言順＝「その他」メニュー内の並び順）。
+  ///
+  /// [priority] は直置きの優先度（小さいほど優先）。狭幅でも
+  /// 蔵書の追加（バーコード）と読書時間の計測は必ず直置きに残す。
+  List<_ShelfAction> _shelfActions() {
+    return [
+      _ShelfAction(
+        index: 0,
+        priority: 2,
+        key: const Key('stats_button'),
+        icon: Icons.bar_chart,
+        tooltip: '読書統計',
+        semanticTestId: 'bookshelf_btn_stats',
+        semanticLabel: '読書統計を開く',
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const StatsScreen(),
+            ),
+          );
+        },
+      ),
+      _ShelfAction(
+        index: 1,
+        priority: 10,
+        key: const Key('recommendation_button'),
+        icon: Icons.auto_awesome,
+        tooltip: '読書の推薦',
+        semanticTestId: 'bookshelf_btn_recommendation',
+        semanticLabel: '読書の推薦を開く',
+        onPressed: _openRecommendations,
+      ),
+      _ShelfAction(
+        index: 2,
+        priority: 10,
+        key: const Key('stagnant_books_button'),
+        icon: Icons.hourglass_bottom,
+        tooltip: '停滞している本',
+        semanticTestId: 'bookshelf_btn_stagnant_books',
+        semanticLabel: '停滞している本を開く',
+        onPressed: _openStagnantBooks,
+      ),
+      _ShelfAction(
+        index: 3,
+        priority: 10,
+        key: const Key('challenge_button'),
+        icon: Icons.emoji_events,
+        tooltip: '年間読書チャレンジ',
+        semanticTestId: 'bookshelf_btn_challenge',
+        semanticLabel: '年間読書チャレンジを開く',
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ChallengeScreen(),
+            ),
+          );
+        },
+      ),
+      _ShelfAction(
+        index: 4,
+        priority: 0,
+        key: const Key('scan_barcode_button'),
+        icon: Icons.camera_alt,
+        tooltip: 'バーコードスキャン',
+        semanticTestId: 'bookshelf_btn_scan_barcode',
+        semanticLabel: 'バーコードスキャンを開く',
+        onPressed: _openBarcodeScanner,
+      ),
+      _ShelfAction(
+        index: 5,
+        priority: 10,
+        key: const Key('bulk_import_button'),
+        icon: Icons.library_add,
+        tooltip: '一括インポート',
+        semanticTestId: 'bookshelf_btn_bulk_import',
+        semanticLabel: '一括インポートを開く',
+        onPressed: _openBulkImport,
+      ),
+      if (widget.queueRepository != null)
+        _ShelfAction(
+          index: 6,
+          priority: 10,
+          key: const Key('reading_queue_button'),
+          icon: Icons.playlist_play,
+          tooltip: '次に読む',
+          semanticTestId: 'bookshelf_btn_reading_queue',
+          semanticLabel: '次に読むキューを開く',
+          onPressed: _openReadingQueue,
+        ),
+      if (widget.noteRepository != null)
+        _ShelfAction(
+          index: 7,
+          priority: 10,
+          key: const Key('open_favorites_button'),
+          icon: Icons.star_outline,
+          tooltip: 'お気に入りの引用',
+          semanticTestId: 'bookshelf_btn_open_favorites',
+          semanticLabel: 'お気に入りの引用を開く',
+          onPressed: _openFavoriteNotes,
+        ),
+      if (widget.reviewRepository != null && widget.noteRepository != null)
+        _ShelfAction(
+          index: 8,
+          priority: 10,
+          key: const Key('backup_button'),
+          icon: Icons.upload_file,
+          tooltip: 'エクスポート/バックアップ',
+          semanticTestId: 'bookshelf_btn_backup',
+          semanticLabel: 'エクスポート/バックアップを開く',
+          onPressed: _openBackup,
+        ),
+      if (widget.onScaleChanged != null)
+        _ShelfAction(
+          index: 9,
+          priority: 10,
+          key: const Key('text_scale_settings_button'),
+          icon: Icons.format_size,
+          tooltip: '文字サイズ設定',
+          semanticTestId: 'bookshelf_btn_text_scale_settings',
+          semanticLabel: '文字サイズ設定を開く',
+          onPressed: _openTextScaleSettings,
+        ),
+      if (widget.onThemeModeChanged != null)
+        _ShelfAction(
+          index: 10,
+          priority: 10,
+          key: AppKeys.themeModeEntry,
+          icon: Icons.brightness_6,
+          tooltip: 'テーマ設定',
+          semanticTestId: 'bookshelf_btn_theme_mode_settings',
+          semanticLabel: 'テーマ設定を開く',
+          onPressed: _openThemeModeSettings,
+        ),
+      if (widget.onReduceMotionChanged != null)
+        _ShelfAction(
+          index: 11,
+          priority: 10,
+          key: AppKeys.reduceMotionEntry,
+          icon: Icons.motion_photos_off_outlined,
+          tooltip: '動きを減らす',
+          semanticTestId: 'bookshelf_btn_reduce_motion_settings',
+          semanticLabel: '動きを減らす設定を開く',
+          onPressed: _openReduceMotionSettings,
+        ),
+      _ShelfAction(
+        index: 12,
+        priority: 10,
+        key: AppKeys.appLockEntry,
+        icon: Icons.lock_outline,
+        tooltip: 'アプリロック',
+        semanticTestId: 'bookshelf_btn_app_lock',
+        semanticLabel: 'アプリロック設定を開く',
+        onPressed: _openAppLockSettings,
+      ),
+      _ShelfAction(
+        index: 13,
+        priority: 10,
+        key: AppKeys.readingReminderEntry,
+        icon: Icons.notifications_active,
+        tooltip: '読書リマインダー',
+        semanticTestId: 'bookshelf_btn_reading_reminder',
+        semanticLabel: '読書リマインダーの設定を開く',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ReadingReminderSettingsScreen(
+              // 静穏時間（おやすみモード）への導線を出すため本番実装を注入。
+              quietHoursRepository: HiveQuietHoursRepository(),
+              // 通知権限の要求（Android 13+ は要求しないと通知が出ない）。
+              permissionRequester: PlatformNotificationPermissionRequester(),
+            ),
+          ),
+        ),
+      ),
+      _ShelfAction(
+        index: 14,
+        priority: 10,
+        key: const Key('about_entry'),
+        icon: Icons.info_outline,
+        tooltip: 'アプリについて',
+        semanticTestId: 'bookshelf_btn_about',
+        semanticLabel: 'アプリについてを開く',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const AboutScreen(),
+          ),
+        ),
+      ),
+      _ShelfAction(
+        index: 15,
+        priority: 10,
+        key: AppKeys.dailyGoalEntry,
+        icon: Icons.flag_outlined,
+        tooltip: '読書の日次目標',
+        semanticTestId: 'bookshelf_btn_daily_goal',
+        semanticLabel: '読書の日次目標を開く',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const DailyReadingGoalScreen(),
+          ),
+        ),
+      ),
+      _ShelfAction(
+        index: 16,
+        priority: 1,
+        key: AppKeys.readingTimerButton,
+        icon: Icons.timer_outlined,
+        tooltip: '読書時間',
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ReadingSessionScreen(
+              repository: widget.readingSessionRepositoryOverride ??
+                  HiveReadingSessionRepository(),
+              now: DateTime.now,
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: const Key('screen_bookshelf'),
       appBar: AppBar(
         title: const Text('本棚'),
-        actions: [
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_stats',
-            label: '読書統計を開く',
-            child: IconButton(
-              key: const Key('stats_button'),
-              icon: const Icon(Icons.bar_chart),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const StatsScreen(),
-                  ),
-                );
-              },
-              tooltip: '読書統計',
-            ),
-          ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_recommendation',
-            label: '読書の推薦を開く',
-            child: IconButton(
-              key: const Key('recommendation_button'),
-              icon: const Icon(Icons.auto_awesome),
-              onPressed: _openRecommendations,
-              tooltip: '読書の推薦',
-            ),
-          ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_stagnant_books',
-            label: '停滞している本を開く',
-            child: IconButton(
-              key: const Key('stagnant_books_button'),
-              icon: const Icon(Icons.hourglass_bottom),
-              onPressed: _openStagnantBooks,
-              tooltip: '停滞している本',
-            ),
-          ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_challenge',
-            label: '年間読書チャレンジを開く',
-            child: IconButton(
-              key: const Key('challenge_button'),
-              icon: const Icon(Icons.emoji_events),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const ChallengeScreen(),
-                  ),
-                );
-              },
-              tooltip: '年間読書チャレンジ',
-            ),
-          ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_scan_barcode',
-            label: 'バーコードスキャンを開く',
-            child: IconButton(
-              key: const Key('scan_barcode_button'),
-              icon: const Icon(Icons.camera_alt),
-              onPressed: _openBarcodeScanner,
-              tooltip: 'バーコードスキャン',
-            ),
-          ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_bulk_import',
-            label: '一括インポートを開く',
-            child: IconButton(
-              key: const Key('bulk_import_button'),
-              icon: const Icon(Icons.library_add),
-              onPressed: _openBulkImport,
-              tooltip: '一括インポート',
-            ),
-          ),
-          if (widget.queueRepository != null)
-            SemanticHelper.interactive(
-              testId: 'bookshelf_btn_reading_queue',
-              label: '次に読むキューを開く',
-              child: IconButton(
-                key: const Key('reading_queue_button'),
-                icon: const Icon(Icons.playlist_play),
-                onPressed: _openReadingQueue,
-                tooltip: '次に読む',
-              ),
-            ),
-          if (widget.noteRepository != null)
-            SemanticHelper.interactive(
-              testId: 'bookshelf_btn_open_favorites',
-              label: 'お気に入りの引用を開く',
-              child: IconButton(
-                key: const Key('open_favorites_button'),
-                icon: const Icon(Icons.star_outline),
-                onPressed: _openFavoriteNotes,
-                tooltip: 'お気に入りの引用',
-              ),
-            ),
-          if (widget.reviewRepository != null && widget.noteRepository != null)
-            SemanticHelper.interactive(
-              testId: 'bookshelf_btn_backup',
-              label: 'エクスポート/バックアップを開く',
-              child: IconButton(
-                key: const Key('backup_button'),
-                icon: const Icon(Icons.upload_file),
-                onPressed: _openBackup,
-                tooltip: 'エクスポート/バックアップ',
-              ),
-            ),
-          if (widget.onScaleChanged != null)
-            SemanticHelper.interactive(
-              testId: 'bookshelf_btn_text_scale_settings',
-              label: '文字サイズ設定を開く',
-              child: IconButton(
-                key: const Key('text_scale_settings_button'),
-                icon: const Icon(Icons.format_size),
-                onPressed: _openTextScaleSettings,
-                tooltip: '文字サイズ設定',
-              ),
-            ),
-          if (widget.onThemeModeChanged != null)
-            SemanticHelper.interactive(
-              testId: 'bookshelf_btn_theme_mode_settings',
-              label: 'テーマ設定を開く',
-              child: IconButton(
-                key: AppKeys.themeModeEntry,
-                icon: const Icon(Icons.brightness_6),
-                onPressed: _openThemeModeSettings,
-                tooltip: 'テーマ設定',
-              ),
-            ),
-          if (widget.onReduceMotionChanged != null)
-            SemanticHelper.interactive(
-              testId: 'bookshelf_btn_reduce_motion_settings',
-              label: '動きを減らす設定を開く',
-              child: IconButton(
-                key: AppKeys.reduceMotionEntry,
-                icon: const Icon(Icons.motion_photos_off_outlined),
-                onPressed: _openReduceMotionSettings,
-                tooltip: '動きを減らす',
-              ),
-            ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_app_lock',
-            label: 'アプリロック設定を開く',
-            child: IconButton(
-              key: AppKeys.appLockEntry,
-              icon: const Icon(Icons.lock_outline),
-              tooltip: 'アプリロック',
-              onPressed: _openAppLockSettings,
-            ),
-          ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_reading_reminder',
-            label: '読書リマインダーの設定を開く',
-            child: IconButton(
-              key: AppKeys.readingReminderEntry,
-              icon: const Icon(Icons.notifications_active),
-              tooltip: '読書リマインダー',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ReadingReminderSettingsScreen(
-                    // 静穏時間（おやすみモード）への導線を出すため本番実装を注入。
-                    quietHoursRepository: HiveQuietHoursRepository(),
-                    // 通知権限の要求（Android 13+ は要求しないと通知が出ない）。
-                    permissionRequester:
-                        PlatformNotificationPermissionRequester(),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_about',
-            label: 'アプリについてを開く',
-            child: IconButton(
-              key: const Key('about_entry'),
-              icon: const Icon(Icons.info_outline),
-              tooltip: 'アプリについて',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const AboutScreen(),
-                ),
-              ),
-            ),
-          ),
-          SemanticHelper.interactive(
-            testId: 'bookshelf_btn_daily_goal',
-            label: '読書の日次目標を開く',
-            child: IconButton(
-              key: AppKeys.dailyGoalEntry,
-              icon: const Icon(Icons.flag_outlined),
-              tooltip: '読書の日次目標',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const DailyReadingGoalScreen(),
-                ),
-              ),
-            ),
-          ),
-          IconButton(
-            key: AppKeys.readingTimerButton,
-            icon: const Icon(Icons.timer_outlined),
-            tooltip: '読書時間',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ReadingSessionScreen(
-                  repository: widget.readingSessionRepositoryOverride ??
-                          HiveReadingSessionRepository(),
-                  now: DateTime.now,
-                ),
-              ),
-            ),
-          ),
-        ],
+        actions: _buildAppBarActionWidgets(context),
       ),
       body: Column(
         children: [
@@ -1194,4 +1287,27 @@ class _BookshelfScreenState extends State<BookshelfScreen> {
       ),
     );
   }
+}
+
+/// 本棚 AppBar の1導線（宣言順 [index] と直置き優先度 [priority] を持つ）。
+class _ShelfAction {
+  final int index;
+  final int priority;
+  final Key key;
+  final IconData icon;
+  final String tooltip;
+  final String? semanticTestId;
+  final String? semanticLabel;
+  final VoidCallback onPressed;
+
+  const _ShelfAction({
+    required this.index,
+    required this.priority,
+    required this.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.semanticTestId,
+    this.semanticLabel,
+  });
 }
