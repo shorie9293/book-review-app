@@ -58,6 +58,12 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
   /// 停止済みで未保存の確定分数（null なら保存待ちなし）。
   int? _pendingMinutes;
 
+  /// 保存処理中か（await 前に立てる再入ガード）。
+  ///
+  /// これが無いと、保存完了前の二度押しで同一確定分が2件保存される
+  /// （id が毎回異なるため重複排除も効かない＝読書時間の二重計上）。
+  bool _isSaving = false;
+
   Timer? _tickTimer;
   int _elapsedSeconds = 0;
 
@@ -207,23 +213,56 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
   }
 
   /// 確定した経過分をセッションとして保存する。
+  ///
+  /// 保存中は再入を閉じる（`_isSaving`）。失敗時は確定分を復元して
+  /// 理由を示し、再試行できる状態に戻す（無言で失わない）。
   Future<void> _savePending() async {
+    if (_isSaving) return;
     final pending = _pendingMinutes;
     if (pending == null) return;
+    // await より前にフラグを立て、フレームを挟まない二度押しも畳む。
+    setState(() {
+      _isSaving = true;
+    });
     final startedAt = widget.now().subtract(Duration(minutes: pending));
     final session = widget.service.fromInterval(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       startedAt: startedAt,
       endedAt: startedAt.add(Duration(minutes: pending)),
     );
-    await widget.repository.add(session);
+    try {
+      await widget.repository.add(session);
+    } catch (error, stackTrace) {
+      appLog.warn('読書セッションの保存に失敗しました', error, stackTrace);
+      if (!mounted) return;
+      // 確定分を戻す（再試行の導線を残す）。下書きは停止時に消しているため
+      // ここで復元しないと読書時間そのものが失われる。
+      setState(() {
+        _isSaving = false;
+        _pendingMinutes = pending;
+      });
+      _showSaveFailedMessage();
+      return;
+    }
     // 保存が通ってから下書きを捨てる（消える前に確実に残す）。
     _clearDraft();
     if (!mounted) return;
     setState(() {
+      _isSaving = false;
       _pendingMinutes = null;
     });
     await _reload();
+  }
+
+  /// 保存失敗を利用者に伝える（再試行可能であることを添える）。
+  void _showSaveFailedMessage() {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(
+      const SnackBar(
+        key: Key('reading_save_failed'),
+        content: Text('読書時間の保存に失敗しました。もう一度お試しください'),
+      ),
+    );
   }
 
   /// 手動追加ダイアログを開く。
@@ -420,9 +459,13 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
                     ? AppKeys.readingStop
                     : AppKeys.readingStart,
                 onPressed: pending != null
-                    ? _savePending
+                    ? (_isSaving ? null : _savePending)
                     : (running ? _stopTimer : _startTimer),
-                child: Text(pending != null ? '保存' : (running ? '停止' : '開始')),
+                child: Text(
+                  pending != null
+                      ? (_isSaving ? '保存中…' : '保存')
+                      : (running ? '停止' : '開始'),
+                ),
               ),
             ),
           ],
