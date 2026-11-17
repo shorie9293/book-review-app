@@ -120,7 +120,8 @@ class AppKeys {
   static Key stagnantDays(String bookId) => Key('stagnant_days_$bookId');
 
   /// 停滞本一覧: 停滞理由の絞り込みチップ（enum名を指定）
-  static Key stagnantReasonChip(String reason) => Key('stagnant_reason_chip_$reason');
+  static Key stagnantReasonChip(String reason) =>
+      Key('stagnant_reason_chip_$reason');
 
   /// 停滞本一覧: 閾値日数の選択チップ
   static Key stagnantMinChip(int days) => Key('stagnant_min_chip_$days');
@@ -173,6 +174,9 @@ class AppKeys {
   /// 読書時間: 空状態
   static const Key readingEmpty = Key('reading_empty');
 
+  /// 読書時間: 履歴セクションの空状態
+  static const Key readingHistoryEmpty = Key('reading_history_empty');
+
   /// 読書の推薦画面（Scaffold）
   static const Key recommendationScreen = Key('screen_recommendation');
 
@@ -200,7 +204,8 @@ class AppKeys {
       Key('finish_forecast_card_$bookId');
 
   /// 読了予測画面への導線（統計 AppBar アクション）
-  static const Key finishForecastOpenButton = Key('finish_forecast_open_button');
+  static const Key finishForecastOpenButton =
+      Key('finish_forecast_open_button');
 
   /// 統計: 前年比カード
   static const Key statsYearComparison = Key('stats_year_comparison');
@@ -213,6 +218,9 @@ class AppKeys {
 
   /// 統計: 前年比 著者数ラベル
   static const Key statsComparisonAuthors = Key('stats_comparison_authors');
+
+  /// 統計: 読了データ0件の空状態
+  static const Key statsEmpty = Key('stats_empty');
 
   /// 読書習慣ヒートマップ: 全体Container
   static const Key readingHabitHeatmap = Key('reading_habit_heatmap');
@@ -481,7 +489,8 @@ class AppKeys {
   static const Key loanLendButton = Key('loan_lend_button');
 
   /// 貸出: 指定貸出の返却ボタン
-  static Key loanReturnButton(String loanId) => Key('loan_return_button_$loanId');
+  static Key loanReturnButton(String loanId) =>
+      Key('loan_return_button_$loanId');
 
   /// 貸出: 指定貸出の行
   static Key loanRow(String loanId) => Key('loan_row_$loanId');
@@ -509,7 +518,8 @@ class AppKeys {
       Key('library_location_chip_$location');
 
   /// 本棚: 検索語履歴チップの並び
-  static const Key librarySearchHistoryChips = Key('library_search_history_chips');
+  static const Key librarySearchHistoryChips =
+      Key('library_search_history_chips');
 
   /// 本棚: 指定検索語の履歴チップ
   static Key librarySearchHistoryChip(String term) =>
@@ -540,7 +550,8 @@ class AppKeys {
   static const Key duplicateOpenButton = Key('bookshelf_duplicate_open');
 
   /// 重複整理: 組カード
-  static Key duplicateGroupCard(String isbnKey) => Key('duplicate_group_$isbnKey');
+  static Key duplicateGroupCard(String isbnKey) =>
+      Key('duplicate_group_$isbnKey');
 
   /// 重複整理: 代表選択ラジオ
   static Key duplicateKeepRadio(String bookId) => Key('duplicate_keep_$bookId');
@@ -580,7 +591,8 @@ class AppKeys {
       Key('auto_backup_share_$fileName');
 
   /// 自動バックアップ: 復元確認ダイアログの確定ボタン
-  static const Key autoBackupRestoreConfirm = Key('auto_backup_restore_confirm');
+  static const Key autoBackupRestoreConfirm =
+      Key('auto_backup_restore_confirm');
 
   /// 自動バックアップ: 復元確認ダイアログのキャンセルボタン
   static const Key autoBackupRestoreCancel = Key('auto_backup_restore_cancel');

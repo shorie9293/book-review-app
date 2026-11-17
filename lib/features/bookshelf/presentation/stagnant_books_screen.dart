@@ -1,4 +1,5 @@
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/features/bookshelf/domain/stagnation.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +51,9 @@ class _StagnantBooksScreenState extends State<StagnantBooksScreen> {
   }
 
   bool get _isDefaultQuery =>
-      _query.isEmpty && _reasonFilter == null && _minDays == widget.initialMinDays;
+      _query.isEmpty &&
+      _reasonFilter == null &&
+      _minDays == widget.initialMinDays;
 
   @override
   Widget build(BuildContext context) {
@@ -142,16 +145,11 @@ class _StagnantBooksScreenState extends State<StagnantBooksScreen> {
 
   Widget _buildList(List<StagnationEntry> entries) {
     if (entries.isEmpty) {
-      return Center(
-        child: Column(
-          key: AppKeys.stagnantEmpty,
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.hourglass_disabled, size: 48),
-            SizedBox(height: 8),
-            Text('停滞している本はありません'),
-          ],
-        ),
+      // 空状態の共通部品。既存文言・既存 Key・既存アイコンを保つ。
+      return EmptyStateView(
+        key: AppKeys.stagnantEmpty,
+        icon: Icons.hourglass_disabled,
+        spec: EmptyStateSpec(title: '停滞している本はありません'),
       );
     }
     return ListView.builder(

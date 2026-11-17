@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/features/import/data/import_history_repository.dart';
 import 'package:book_review_app/features/import/domain/import_history_entry.dart';
 import 'package:book_review_app/features/import/domain/import_history_service.dart';
@@ -124,14 +125,10 @@ class _ImportHistoryScreenState extends State<ImportHistoryScreen> {
                 _buildFilterChips(),
                 const SizedBox(height: 8),
                 if (visible.isEmpty)
-                  Padding(
+                  // 空状態の共通部品。既存文言・既存 Key は一字も変えない。
+                  EmptyStateView(
                     key: const Key('import_history_empty'),
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Text(
-                      '取込履歴はまだありません',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
+                    spec: EmptyStateSpec(title: '取込履歴はまだありません'),
                   )
                 else
                   for (final entry in visible) _buildRow(entry),

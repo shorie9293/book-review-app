@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/core/widgets/load_state_views.dart';
 
 void main() {
@@ -41,9 +42,17 @@ void main() {
     });
   });
 
-  group('LoadEmptyView', () {
-    testWidgets('message を表示し、失敗表示は出さない', (tester) async {
-      await pump(tester, const LoadEmptyView(message: 'まだ記録がありません'));
+  // 旧・0件表示の試練を、同じ文言・同じ Key 期待のまま
+  // 統合先の EmptyStateView へ向け直したもの（カバレッジは落とさない）。
+  group('EmptyStateView（0件）', () {
+    testWidgets('0件の文言を表示し、失敗表示は出さない', (tester) async {
+      await pump(
+        tester,
+        EmptyStateView(
+          key: const ValueKey('load_empty_view'),
+          spec: EmptyStateSpec(title: 'まだ記録がありません'),
+        ),
+      );
 
       expect(find.byKey(const ValueKey('load_empty_view')), findsOneWidget);
       expect(find.text('まだ記録がありません'), findsOneWidget);
@@ -52,7 +61,13 @@ void main() {
     });
 
     testWidgets('文言は error と empty で必ず異なる', (tester) async {
-      await pump(tester, const LoadEmptyView(message: 'まだ記録がありません'));
+      await pump(
+        tester,
+        EmptyStateView(
+          key: const ValueKey('load_empty_view'),
+          spec: EmptyStateSpec(title: 'まだ記録がありません'),
+        ),
+      );
       expect(find.text('まだ記録がありません'), findsOneWidget);
 
       await pump(tester, const LoadErrorView(message: '読み込みに失敗しました'));

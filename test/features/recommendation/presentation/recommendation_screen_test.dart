@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
 import 'package:book_review_app/features/challenge/data/hive_challenge_repository.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/models/review.dart';
@@ -30,9 +31,11 @@ Book _book({
   );
 }
 
-Review _review({required String id, required String bookId, required int rating}) {
+Review _review(
+    {required String id, required String bookId, required int rating}) {
   final now = DateTime(2026, 1, 1);
-  return Review(id: id, bookId: bookId, rating: rating, text: '', createdAt: now);
+  return Review(
+      id: id, bookId: bookId, rating: rating, text: '', createdAt: now);
 }
 
 Future<void> _pump(WidgetTester tester, Widget home) async {
@@ -174,6 +177,23 @@ void main() {
       );
       expect(find.byKey(AppKeys.recommendationEmpty), findsOneWidget);
       expect(find.textContaining('推薦できる積読'), findsOneWidget);
+    });
+
+    testWidgets('空状態は共通部品 EmptyStateView が既存 Key で1つ出る', (tester) async {
+      await _pump(
+        tester,
+        const RecommendationScreen(books: [], reviews: []),
+      );
+
+      expect(find.byType(EmptyStateView), findsOneWidget);
+      expect(find.byKey(AppKeys.recommendationEmpty), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(AppKeys.recommendationEmpty),
+          matching: find.text('推薦できる積読がありません'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('候補ゼロではカードが出ない', (tester) async {

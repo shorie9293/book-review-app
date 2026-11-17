@@ -13,6 +13,7 @@ import 'package:book_review_app/features/undo/domain/undo_buffer.dart';
 import 'package:book_review_app/features/undo/presentation/undo_snack_bar.dart';
 import 'package:book_review_app/core/haptics.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/core/widgets/load_state_views.dart';
 import 'package:takamagahara_ui/takamagahara_ui.dart' hide AppKeys;
 
@@ -396,12 +397,16 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
     }
     if (_sessions.isEmpty) {
       // 空状態：記録が無い旨を示しつつ、タイマーはすぐ使えるように残す。
+      // 旧 Key（ValueKey('load_empty_view')）は既存試練が参照しているため保持する。
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const LoadEmptyView(
-            key: AppKeys.readingEmpty,
-            message: 'まだ記録がありません',
+          KeyedSubtree(
+            key: const ValueKey('load_empty_view'),
+            child: EmptyStateView(
+              key: AppKeys.readingEmpty,
+              spec: EmptyStateSpec(title: 'まだ記録がありません'),
+            ),
           ),
           _buildTimerSection(),
         ],
@@ -567,7 +572,10 @@ class _ReadingSessionScreenState extends State<ReadingSessionScreen> {
             Text('履歴', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             if (sorted.isEmpty)
-              const Text('まだ記録がありません')
+              EmptyStateView(
+                key: AppKeys.readingHistoryEmpty,
+                spec: EmptyStateSpec(title: 'まだ記録がありません'),
+              )
             else
               for (final session in sorted)
                 ListTile(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book_loan.dart';
 import 'package:book_review_app/domain/repositories/book_loan_repository.dart';
 import 'package:book_review_app/features/loan/data/hive_book_loan_repository.dart';
@@ -239,6 +240,41 @@ void main() {
 
     expect(find.byKey(AppKeys.loanEmpty), findsOneWidget);
     expect(find.text('貸出中 0冊'), findsOneWidget);
+  });
+
+  testWidgets('0件の空状態は共通部品 EmptyStateView が既存 Key で1つ出る', (tester) async {
+    await pumpScreen(tester, repository: InMemoryBookLoanRepository());
+
+    expect(find.byType(EmptyStateView), findsOneWidget);
+    expect(find.byKey(AppKeys.loanEmpty), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(AppKeys.loanEmpty),
+        matching: find.text('該当する貸出はありません'),
+      ),
+      findsOneWidget,
+    );
+    // 貸出ゼロ（検索していない）では行動ボタンを出さない。
+    expect(find.byKey(EmptyStateView.actionButtonKey), findsNothing);
+  });
+
+  testWidgets('検索ヒットなしの空状態は「検索をクリア」で全件に戻せる', (tester) async {
+    final repository = InMemoryBookLoanRepository();
+    await repository.saveLoans(sampleLoans());
+
+    await pumpScreen(tester, repository: repository);
+    await tester.enterText(find.byKey(AppKeys.loanSearchField), '存在しない');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(EmptyStateView), findsOneWidget);
+    expect(find.byKey(EmptyStateView.actionButtonKey), findsOneWidget);
+    expect(find.text('検索をクリア'), findsOneWidget);
+
+    await tester.tap(find.byKey(EmptyStateView.actionButtonKey));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(AppKeys.loanEmpty), findsNothing);
+    expect(find.byKey(AppKeys.loanRow('l_over')), findsOneWidget);
   });
 
   testWidgets('返却ボタンで repository に返却済が永続化される', (tester) async {

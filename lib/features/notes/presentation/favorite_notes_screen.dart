@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
@@ -91,9 +92,11 @@ class _FavoriteNotesScreenState extends State<FavoriteNotesScreen> {
       );
     }
     if (_favorites.isEmpty) {
-      return const Center(
-        key: Key('favorite_empty_state'),
-        child: Text('お気に入りの引用はまだありません'),
+      // 空状態の共通部品。既存文言・既存 Key は一字も変えない。
+      return EmptyStateView(
+        key: const Key('favorite_empty_state'),
+        icon: Icons.favorite_border,
+        spec: EmptyStateSpec(title: 'お気に入りの引用はまだありません'),
       );
     }
 

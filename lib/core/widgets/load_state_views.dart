@@ -3,7 +3,8 @@ import 'package:takamagahara_ui/takamagahara_ui.dart';
 
 /// 読み込み失敗の表示。
 ///
-/// 「0件」([LoadEmptyView]) とは別ウィジェットにし、文言も必ず分ける。
+/// 「0件」は empty_state.dart の EmptyStateView が担う。失敗と0件は
+/// 別ウィジェットにし、文言も必ず分ける。
 /// [onRetry] が null なら再試行ボタンを出さない（再試行不能な失敗）。
 class LoadErrorView extends StatelessWidget {
   const LoadErrorView({
@@ -47,28 +48,6 @@ class LoadErrorView extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 読み込み成功かつ0件の表示。
-class LoadEmptyView extends StatelessWidget {
-  const LoadEmptyView({super.key, required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        key: const ValueKey('load_empty_view'),
-        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge,
         ),
       ),
     );

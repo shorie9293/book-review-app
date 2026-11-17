@@ -92,7 +92,7 @@ void main() {
   }
 
   group('読書時間画面: 失敗と0件の分離', () {
-    testWidgets('読み込み失敗なら LoadErrorView を出し LoadEmptyView を出さない', (tester) async {
+    testWidgets('読み込み失敗なら LoadErrorView を出し 0件の空状態を出さない', (tester) async {
       final repository = _ScriptedSessionRepository([
         () => throw StateError('hive が壊れた'),
       ]);
@@ -107,7 +107,7 @@ void main() {
       expect(find.text('まだ記録がありません'), findsNothing);
     });
 
-    testWidgets('0件なら LoadEmptyView を出し LoadErrorView を出さない', (tester) async {
+    testWidgets('0件なら EmptyStateView を出し LoadErrorView を出さない', (tester) async {
       final repository = _ScriptedSessionRepository([
         () => const <ReadingSession>[],
       ]);

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/domain/models/review.dart';
@@ -108,6 +110,20 @@ void main() {
     testWidgets('空状態のメッセージを表示する', (tester) async {
       await pumpScreen(tester, FakeStatsSource());
       expect(find.text('まだ読了データがありません。'), findsOneWidget);
+    });
+
+    testWidgets('0件の空状態は共通部品 EmptyStateView が既存 Key で1つ出る', (tester) async {
+      await pumpScreen(tester, FakeStatsSource());
+
+      expect(find.byType(EmptyStateView), findsOneWidget);
+      expect(find.byKey(AppKeys.statsEmpty), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(AppKeys.statsEmpty),
+          matching: find.text('まだ読了データがありません。'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('エラー状態のメッセージを表示する', (tester) async {

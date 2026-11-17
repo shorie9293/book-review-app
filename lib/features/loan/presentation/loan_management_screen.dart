@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book_loan.dart';
 import 'package:book_review_app/domain/repositories/book_loan_repository.dart';
 import 'package:book_review_app/features/loan/data/loan_due_reminder_repository.dart';
@@ -134,8 +135,7 @@ class _LoanManagementScreenState extends State<LoanManagementScreen> {
   /// 返却を永続化し、再読込して表示を更新する。
   Future<void> _returnLoan(BookLoan loan) async {
     final current = await widget.repository.loadLoans();
-    final updated =
-        BookLoanService.markReturned(current, loan.id, _now);
+    final updated = BookLoanService.markReturned(current, loan.id, _now);
     await widget.repository.saveLoans(updated);
     await _load();
     // 対象件数が変わるため通知本文を作り直す（失敗しても画面は壊さない）。
@@ -273,11 +273,16 @@ class _LoanManagementScreenState extends State<LoanManagementScreen> {
         ),
         Expanded(
           child: visible.isEmpty
-              ? Center(
-                  child: Container(
-                    key: AppKeys.loanEmpty,
-                    padding: const EdgeInsets.all(24),
-                    child: const Text('該当する貸出はありません'),
+              // 空状態の共通部品。既存文言・既存 Key は一字も変えない。
+              // 行動導線は「検索中で0件」のときだけ出す（既存の検索クリア）。
+              ? EmptyStateView(
+                  key: AppKeys.loanEmpty,
+                  spec: EmptyStateSpec(
+                    title: '該当する貸出はありません',
+                    actionLabel: _query.isEmpty ? null : '検索をクリア',
+                    onAction: _query.isEmpty
+                        ? null
+                        : () => setState(() => _query = ''),
                   ),
                 )
               : ListView.builder(
@@ -341,8 +346,7 @@ class _LoanManagementScreenState extends State<LoanManagementScreen> {
                   label: '返却期限の通知設定を保存する',
                   child: ElevatedButton(
                     key: AppKeys.loanDueReminderSave,
-                    onPressed:
-                        _reminderSaving ? null : _saveReminderSettings,
+                    onPressed: _reminderSaving ? null : _saveReminderSettings,
                     child: const Text('保存'),
                   ),
                 ),

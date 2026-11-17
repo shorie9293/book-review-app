@@ -1,6 +1,7 @@
 import 'package:book_review_app/core/haptics.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
 import 'package:book_review_app/core/time/local_calendar_date.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/models/review.dart';
@@ -58,8 +59,7 @@ class _DuplicateBooksScreenState extends State<DuplicateBooksScreen> {
 
   Future<void> _load() async {
     try {
-      final books =
-          widget.booksOverride ?? await widget.repository.getBooks();
+      final books = widget.booksOverride ?? await widget.repository.getBooks();
       if (!mounted) return;
       setState(() {
         _books = List<Book>.of(books);
@@ -289,16 +289,11 @@ class _DuplicateBooksScreenState extends State<DuplicateBooksScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        key: AppKeys.duplicateEmpty,
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.library_add_check_outlined, size: 48),
-          SizedBox(height: 8),
-          Text('重複した蔵書はありません'),
-        ],
-      ),
+    // 空状態の共通部品。既存文言・既存 Key・既存アイコンを保つ。
+    return EmptyStateView(
+      key: AppKeys.duplicateEmpty,
+      icon: Icons.library_add_check_outlined,
+      spec: EmptyStateSpec(title: '重複した蔵書はありません'),
     );
   }
 

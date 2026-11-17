@@ -1,4 +1,5 @@
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
@@ -105,6 +106,28 @@ void main() {
       find.descendant(
         of: find.byKey(AppKeys.duplicateEmpty),
         matching: find.text('重複した蔵書はありません'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('0件の空状態は共通部品 EmptyStateView が既存 Key で1つ出る', (tester) async {
+    final books = [
+      mk(id: 'x', title: '本X', isbn: '9781111111111'),
+      mk(id: 'y', title: '本Y', isbn: '9782222222222'),
+    ];
+    final repository = FakeBookRepository(books);
+    await pumpWithViewport(
+      tester,
+      buildScreen(repository: repository, booksOverride: books),
+    );
+
+    expect(find.byType(EmptyStateView), findsOneWidget);
+    expect(find.byKey(AppKeys.duplicateEmpty), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(AppKeys.duplicateEmpty),
+        matching: find.byIcon(Icons.library_add_check_outlined),
       ),
       findsOneWidget,
     );

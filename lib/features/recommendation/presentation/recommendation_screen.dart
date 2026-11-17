@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
@@ -108,9 +109,10 @@ class _RecommendationScreenState extends State<RecommendationScreen> {
       limit: widget.limit,
     );
     if (recommendations.isEmpty) {
-      return const Center(
+      // 空状態の共通部品。既存文言は一字も変えない。
+      return EmptyStateView(
         key: AppKeys.recommendationEmpty,
-        child: Text('推薦できる積読がありません'),
+        spec: EmptyStateSpec(title: '推薦できる積読がありません'),
       );
     }
     return ListView.builder(
@@ -170,7 +172,8 @@ class _RecommendationCard extends StatelessWidget {
                 children: [
                   for (final genre in genres)
                     Chip(
-                      key: Key('recommendation_chip_${recommendation.bookId}_$genre'),
+                      key: Key(
+                          'recommendation_chip_${recommendation.bookId}_$genre'),
                       label: Text(genre),
                     ),
                 ],

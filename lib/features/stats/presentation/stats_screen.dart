@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/review.dart';
 import 'package:book_review_app/features/bookshelf/data/hive_book_repository.dart';
@@ -173,8 +174,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   builder: (_) => ShareCardScreen(
                     dataSource: widget.dataSource,
                     now: widget.now,
-                    capture:
-                        widget.capture ?? const RepaintBoundaryCapture(),
+                    capture: widget.capture ?? const RepaintBoundaryCapture(),
                     exporter: widget.exporter ?? const SharePlusExporter(),
                   ),
                 ),
@@ -213,7 +213,12 @@ class _StatsScreenState extends State<StatsScreen> {
     final stats = _viewModel.stats;
     final comparison = _viewModel.comparison;
     if (stats == null || stats.totalFinished == 0) {
-      return const Center(child: Text('まだ読了データがありません。'));
+      // 空状態の共通部品。既存文言は一字も変えない。
+      return EmptyStateView(
+        key: AppKeys.statsEmpty,
+        icon: Icons.insights_outlined,
+        spec: EmptyStateSpec(title: 'まだ読了データがありません。'),
+      );
     }
 
     return SingleChildScrollView(
@@ -267,6 +272,10 @@ class _StatsScreenState extends State<StatsScreen> {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
+            // セクション内（Card の1行）の注記は共通部品にしない。
+            // EmptyStateView は Center + SingleChildScrollView + 上下48px の
+            // 余白を持ち、実測でカード高が 60px → 191px に膨らみ（中身は
+            // 24px の1行）、カード内に入れ子スクロールを作ってしまうため。
             if (!comparison.hasPreviousData)
               const Text('前年のデータがありません')
             else ...[
@@ -318,15 +327,13 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '読了 ${stats.totalFinished} 円'
-              .replaceFirst('円', '冊'),
+              '読了 ${stats.totalFinished} 円'.replaceFirst('円', '冊'),
               key: const Key('stats_total'),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text('月平均 ${stats.pacePerMonth.toStringAsFixed(1)} 冊'),
-            if (rating != null)
-              Text('レビュー平均評価 ${rating.toStringAsFixed(1)}'),
+            if (rating != null) Text('レビュー平均評価 ${rating.toStringAsFixed(1)}'),
             if (stats.topAuthor != null) Text('最多著者: ${stats.topAuthor}'),
           ],
         ),
@@ -335,8 +342,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildMonthlyCard(BuildContext context, ReadingStats stats) {
-    final maxCount =
-        stats.monthlyCounts.reduce((a, b) => a > b ? a : b);
+    final maxCount = stats.monthlyCounts.reduce((a, b) => a > b ? a : b);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),

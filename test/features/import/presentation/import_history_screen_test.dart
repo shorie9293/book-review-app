@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/features/import/data/import_history_repository.dart';
 import 'package:book_review_app/features/import/domain/import_history_entry.dart';
 import 'package:book_review_app/features/import/domain/import_history_service.dart';
@@ -67,6 +68,20 @@ void main() {
     expect(find.byKey(const Key('import_history_empty')), findsOneWidget);
     expect(find.text('取込履歴はまだありません'), findsOneWidget);
     expect(find.byKey(const Key('import_history_row_old')), findsNothing);
+  });
+
+  testWidgets('0件の空状態は共通部品 EmptyStateView が既存 Key で1つ出る', (tester) async {
+    await pumpScreen(tester, InMemoryImportHistoryRepository());
+
+    expect(find.byType(EmptyStateView), findsOneWidget);
+    expect(find.byKey(const Key('import_history_empty')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('import_history_empty')),
+        matching: find.text('取込履歴はまだありません'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('履歴を新しい順に一覧表示する', (tester) async {

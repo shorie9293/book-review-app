@@ -1,4 +1,5 @@
 import 'package:book_review_app/core/testing/app_keys.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/reading_status.dart';
 import 'package:book_review_app/features/bookshelf/presentation/stagnant_books_screen.dart';
@@ -63,6 +64,30 @@ void main() {
     ]);
     expect(find.byKey(AppKeys.stagnantEmpty), findsOneWidget);
     expect(find.byKey(AppKeys.stagnantEntry('done')), findsNothing);
+  });
+
+  testWidgets('0件の空状態は共通部品 EmptyStateView が既存 Key で1つ出る', (tester) async {
+    await _pump(tester, [
+      _book(id: 'done', status: ReadingStatus.finished, daysAgo: 100),
+    ]);
+
+    expect(find.byType(EmptyStateView), findsOneWidget);
+    expect(find.byKey(AppKeys.stagnantEmpty), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(AppKeys.stagnantEmpty),
+        matching: find.text('停滞している本はありません'),
+      ),
+      findsOneWidget,
+    );
+    // 既存のアイコン（hourglass_disabled）は共通部品の icon 引数で保つ。
+    expect(
+      find.descendant(
+        of: find.byKey(AppKeys.stagnantEmpty),
+        matching: find.byIcon(Icons.hourglass_disabled),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('閾値チップ（7日）で対象が増える', (tester) async {

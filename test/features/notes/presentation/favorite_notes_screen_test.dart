@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:book_review_app/core/widgets/empty_state.dart';
 import 'package:book_review_app/domain/models/book.dart';
 import 'package:book_review_app/domain/models/book_note.dart';
 import 'package:book_review_app/domain/repositories/book_note_repository.dart';
@@ -95,5 +96,19 @@ void main() {
   testWidgets('読み込み失敗時はエラー状態を表示する', (tester) async {
     await pumpScreen(tester, repository: _ThrowingRepository());
     expect(find.byKey(const Key('favorite_error_state')), findsOneWidget);
+  });
+
+  testWidgets('0件の空状態は共通部品 EmptyStateView が既存 Key で1つ出る', (tester) async {
+    await pumpScreen(tester, repository: InMemoryBookNoteRepository());
+
+    expect(find.byType(EmptyStateView), findsOneWidget);
+    expect(find.byKey(const Key('favorite_empty_state')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('favorite_empty_state')),
+        matching: find.text('お気に入りの引用はまだありません'),
+      ),
+      findsOneWidget,
+    );
   });
 }
