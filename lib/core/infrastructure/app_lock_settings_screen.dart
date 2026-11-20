@@ -69,6 +69,7 @@ class _AppLockSettingsScreenState extends State<AppLockSettingsScreen> {
     try {
       await _service!.enableWithPasscode(code);
     } on ArgumentError {
+      if (!mounted) return;
       setState(() => _error = '4桁の数字を入力してください');
       return;
     }

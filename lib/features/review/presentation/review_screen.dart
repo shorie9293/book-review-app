@@ -68,11 +68,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
       final reviews = await widget.reviewRepository.getReviewsByBookId(
         widget.bookId,
       );
+      if (!mounted) return;
       setState(() {
         _reviews = reviews;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;

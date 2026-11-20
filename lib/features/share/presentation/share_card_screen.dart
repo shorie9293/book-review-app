@@ -86,9 +86,12 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
         stats: const reading_stats.ReadingStats.empty(),
         now: now(),
       );
+      if (!mounted) return;
       setState(() => _data = data);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
