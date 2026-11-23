@@ -33,6 +33,7 @@ import 'package:book_review_app/features/reminder/presentation/notification_tap_
 import 'package:book_review_app/features/tutorial/data/tutorial_repository.dart';
 import 'package:book_review_app/features/tutorial/presentation/tutorial_screen.dart';
 import 'package:book_review_app/screens/main_screen.dart';
+import 'package:book_review_app/core/text_scale_composition.dart';
 
 /// 端末内クラッシュログの記録役（zone の受け皿から使う）。
 CrashLogger? _crashLogger;
@@ -74,8 +75,7 @@ Future<void> bootstrap() async {
       );
     }
     final ready = await SharedFileStore.instance.ensureDirectory();
-    appLog.info(
-        '[main] 共有ストレージ: ${ready ? '準備OK' : '未設定（連携機能は停止中）'}');
+    appLog.info('[main] 共有ストレージ: ${ready ? '準備OK' : '未設定（連携機能は停止中）'}');
   } catch (e) {
     appLog.warn('[main] 共有ストレージ初期化失敗（アプリは継続）', e);
   }
@@ -239,7 +239,7 @@ class _MyAppState extends State<MyApp> {
         builder: (context, child) => MediaQuery(
           data: applyReduceMotion(
             MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(_textScale),
+              textScaler: composeWithSystemTextScaler(context, _textScale),
             ),
             _reduceMotion,
           ),
