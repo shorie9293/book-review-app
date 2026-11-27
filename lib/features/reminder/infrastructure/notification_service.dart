@@ -16,10 +16,20 @@ import 'package:book_review_app/features/reminder/infrastructure/quiet_hours_gua
 /// guard を省略した場合は [QuietHoursGuardWiring.create] が使われるため、
 /// 設定画面で保存した静穏時間設定が本番経路へそのまま反映される。
 class BookNotificationService {
-  BookNotificationService({QuietHoursGuard? guard})
-      : _guard = guard ?? QuietHoursGuardWiring.create();
+  BookNotificationService({
+    QuietHoursGuard? guard,
+    FlutterLocalNotificationsPlugin? plugin,
+    Future<bool> Function()? exactAlarmAllowed,
+  })  : _guard = guard ?? QuietHoursGuardWiring.create(),
+        _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
+        _exactAlarmAllowed = exactAlarmAllowed;
 
   final QuietHoursGuard _guard;
+
+  /// 正確アラーム権限の照会シーム（試練での注入用）。
+  ///
+  /// null なら従来どおりプラグインへ直接照会する。
+  final Future<bool> Function()? _exactAlarmAllowed;
 
   static const int _reminderBaseId = 200; // 通知ID = 200 + weekday(1..7)
   static const int _testNotificationId = 999;
@@ -31,8 +41,7 @@ class BookNotificationService {
   /// 返却期限リマインダーの通知チャネル。
   static const String _loanChannelId = 'book_loan';
 
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin;
 
   bool _initialized = false;
 
@@ -337,7 +346,23 @@ class BookNotificationService {
   }
 
   /// 正確アラーム権限があれば exact、なければ inexact へフォールバック。
+  ///
+  /// 照会シーム [_exactAlarmAllowed] が注入されていればそれを優先する。
+  /// シーム未注入時は従来どおりプラグインへ直接照会する。
   Future<AndroidScheduleMode> _getScheduleMode() async {
+    final seam = _exactAlarmAllowed;
+    if (seam != null) {
+      try {
+        final allowed =
+            await seam().timeout(const Duration(seconds: 2));
+        return allowed
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle;
+      } catch (_) {
+        // シームの失敗も安全側へ
+        return AndroidScheduleMode.inexactAllowWhileIdle;
+      }
+    }
     try {
       final androidImpl = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
